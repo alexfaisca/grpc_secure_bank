@@ -2,6 +2,8 @@
 
 A distributed bank application that supports user authentication through the Needham-Schroeder protocol and communication in HTTP/2 through gRPC, and sports a custom database managemer system built with hibernate.
 
+Checkout the demo video to see it all coming together!
+
 ## Contents
 
 This repository contains documentation and source code for the *Network and Computer Security (SIRS)* project.
