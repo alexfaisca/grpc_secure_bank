@@ -30,14 +30,17 @@ public class DatabaseServer {
     this.state = new DatabaseManager(
         new DatabaseService(args.get(0), args.get(1), databaseAddress, databasePort, debug));
 
-    // Test add account
-    state.createAccount(Collections.singletonList("Alice"), Operations.hash("12345".getBytes()),
-        new BigDecimal("10101010101"), OffsetDateTime.now());
-    state.createAccount(Collections.singletonList("Bob"), Operations.hash("12345".getBytes()),
-        new BigDecimal("9599543"), OffsetDateTime.now());
-    // Test order payment
-    state.orderPayment("Bob", Operations.hash("12345".getBytes()), LocalDateTime.now(), new BigDecimal("1000"),
-        "Last Tuesday's dinner", "Alice", OffsetDateTime.now());
+    // // Test add account
+    // state.createAccount(Collections.singletonList("Alice"),
+    // Operations.hash("12345".getBytes()),
+    // new BigDecimal("10101010101"), OffsetDateTime.now());
+    // state.createAccount(Collections.singletonList("Bob"),
+    // Operations.hash("12345".getBytes()),
+    // new BigDecimal("9599543"), OffsetDateTime.now());
+    // // Test order payment
+    // state.orderPayment("Bob", Operations.hash("12345".getBytes()),
+    // LocalDateTime.now(), new BigDecimal("1000"),
+    // "Last Tuesday's dinner", "Alice", OffsetDateTime.now());
 
     final DatabaseServerCryptographicManager cryptoCore = new DatabaseServerCryptographicManager(
         args.get(4), args.get(5), args.get(6), args.get(7));
@@ -45,7 +48,7 @@ public class DatabaseServer {
     this.server = Grpc.newServerBuilderForPort(
         databasePort,
         TlsServerCredentials.newBuilder().keyManager(new File(args.get(9)), new File(args.get(10))).build())
-        .addService(new DatabaseServerImpl<>(state, cryptoCore, debug)).build();
+        .addService(new DatabaseServerImpl(state, cryptoCore, debug)).build();
   }
 
   private void serverStartup() throws IOException {
@@ -70,9 +73,7 @@ public class DatabaseServer {
           + state.getService().getServerPort());
     state.shutDown();
     System.out.println("Shutting down.");
-    if (server.awaitTermination(1, TimeUnit.SECONDS))
-      System.exit(0);
-    server.shutdownNow();
+    System.exit(0);
   }
 
   private void blockUntilShutDown() throws InterruptedException {

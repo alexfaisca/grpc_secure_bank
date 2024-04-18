@@ -47,10 +47,6 @@ public class DatabaseState implements DatabaseOperations {
 
   }
 
-  private enum RequestType {
-    CREATE_ACCOUNT, DELETE_ACCOUNT, BALANCE, GET_MOVEMENTS, ADD_EXPENSE, ORDER_PAYMENT
-  }
-
   private final BankAccountService bankAccountService;
   private final MovementService movementService;
   private final PaymentService paymentService;
@@ -76,22 +72,20 @@ public class DatabaseState implements DatabaseOperations {
     return getTimestamps(type).contains(timestamp);
   }
 
-  private void beforeAll(RequestType type, OffsetDateTime timestamp) {
+  @Override
+  public void registerOperation(RequestType type, OffsetDateTime timestamp) {
     if (oldTimestampString(type, timestamp))
       throw new ReplayAttackException();
     addTimestamp(type, timestamp);
   }
 
   @Override
-  public void createAccount(List<String> usernames, byte[] password, BigDecimal initialDeposit,
-      OffsetDateTime timestamp) {
-    beforeAll(RequestType.CREATE_ACCOUNT, timestamp);
+  public void createAccount(List<String> usernames, byte[] password, BigDecimal initialDeposit) {
     BankAccountDto ignore = bankAccountService.createAccount(usernames, password, initialDeposit);
   }
 
   @Override
-  public void deleteAccount(String username, byte[] password, OffsetDateTime timestamp) {
-    beforeAll(RequestType.DELETE_ACCOUNT, timestamp);
+  public void deleteAccount(String username) {
     bankAccountService.deleteAccount(username);
   }
 
@@ -100,14 +94,12 @@ public class DatabaseState implements DatabaseOperations {
   }
 
   @Override
-  public BigDecimal balance(String username, byte[] password, OffsetDateTime timestamp) {
-    beforeAll(RequestType.BALANCE, timestamp);
+  public BigDecimal balance(String username) {
     return bankAccountService.getBalance(username);
   }
 
   @Override
-  public JsonArrayBuilder getMovements(String username, byte[] password, OffsetDateTime timestamp) {
-    beforeAll(RequestType.GET_MOVEMENTS, timestamp);
+  public JsonArrayBuilder getMovements(String username) {
     JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 
     for (MovementDto movementDto : movementService.getAccountMovements(username)) {
@@ -124,16 +116,13 @@ public class DatabaseState implements DatabaseOperations {
 
   @Override
   @Deprecated
-  public void addExpense(String username, byte[] password, LocalDateTime date, BigDecimal amount, String description,
-      OffsetDateTime timestamp) {
-    beforeAll(RequestType.ADD_EXPENSE, timestamp);
+  public void addExpense(String username, LocalDateTime date, BigDecimal amount, String description) {
     MovementDto ignored = movementService.addMovement(username, date, amount, description);
   }
 
   @Override
-  public void orderPayment(String username, byte[] password, LocalDateTime date, BigDecimal amount, String description,
-      String recipient, OffsetDateTime timestamp) {
-    beforeAll(RequestType.ORDER_PAYMENT, timestamp);
+  public void orderPayment(String username, LocalDateTime date, BigDecimal amount, String description,
+      String recipient) {
     PaymentDto ignored = paymentService.orderPayment(username, date, amount, description, recipient);
   }
 

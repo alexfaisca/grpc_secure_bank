@@ -2,11 +2,14 @@ package pt.tecnico.sirs.databaseserver.repository;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+
+import net.sf.ehcache.transaction.xa.processor.XARequest.RequestType;
 import pt.tecnico.sirs.databaseserver.grpc.DatabaseService;
 import pt.tecnico.sirs.databaseserver.repository.core.DatabaseTransaction;
 import pt.tecnico.sirs.databaseserver.repository.core.HibernateUtil;
 import pt.tecnico.sirs.databaseserver.repository.service.DatabaseState;
 import pt.tecnico.sirs.databaseserver.repository.exceptions.WrongPasswordException;
+import pt.tecnico.sirs.databaseserver.repository.DatabaseOperations;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,7 +18,7 @@ import java.util.List;
 
 import javax.json.JsonArrayBuilder;
 
-public final class DatabaseManager implements DatabaseOperations {
+public final class DatabaseManager {
   private abstract static class SimpleDatabaseTransaction<ObjectiveType> extends DatabaseTransaction {
     ObjectiveType yield;
 
@@ -54,86 +57,76 @@ public final class DatabaseManager implements DatabaseOperations {
     HibernateUtil.shutdown();
   }
 
-  @Override
   public void createAccount(List<String> usernames, byte[] password, BigDecimal initialDeposit,
       OffsetDateTime timestamp) {
     new SimpleDatabaseTransaction<Void>() {
       @Override
       public void doInTransaction() {
-        databaseOperator.createAccount(usernames, password, initialDeposit, timestamp);
+        databaseOperator.registerOperation(DatabaseOperations.RequestType.CREATE_ACCOUNT, timestamp);
+        databaseOperator.createAccount(usernames, password, initialDeposit);
       }
     }.yield();
   }
 
-  @Override
   public void deleteAccount(String username, byte[] password, OffsetDateTime timestamp) {
     new SimpleDatabaseTransaction<Void>() {
       @Override
       public void doInTransaction() {
+        databaseOperator.registerOperation(DatabaseOperations.RequestType.DELETE_ACCOUNT, timestamp);
         if (!databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
-        databaseOperator.deleteAccount(username, password, timestamp);
+        databaseOperator.deleteAccount(username);
       }
     }.yield();
   }
 
-  @Override
-  public boolean checkPassword(String username, byte[] password) {
-    return new SimpleDatabaseTransaction<Boolean>() {
-      @Override
-      public void doInTransaction() {
-        setTransactionYield(databaseOperator.checkPassword(username, password));
-      }
-    }.yield();
-  }
-
-  @Override
   public BigDecimal balance(String username, byte[] password, OffsetDateTime timestamp) {
     return new SimpleDatabaseTransaction<BigDecimal>() {
       @Override
       public void doInTransaction() {
+        databaseOperator.registerOperation(DatabaseOperations.RequestType.BALANCE, timestamp);
         if (!databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
-        setTransactionYield(databaseOperator.balance(username, password, timestamp));
+        setTransactionYield(databaseOperator.balance(username));
       }
     }.yield();
   }
 
-  @Override
   public JsonArrayBuilder getMovements(String username, byte[] password, OffsetDateTime timestamp) {
     return new SimpleDatabaseTransaction<JsonArrayBuilder>() {
       @Override
       public void doInTransaction() {
+        databaseOperator.registerOperation(DatabaseOperations.RequestType.GET_MOVEMENTS, timestamp);
         if (!databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
-        setTransactionYield(databaseOperator.getMovements(username, password, timestamp));
+        setTransactionYield(databaseOperator.getMovements(username));
       }
     }.yield();
   }
 
-  @Override
   @Deprecated
   public void addExpense(String username, byte[] password, LocalDateTime date, BigDecimal amount, String description,
       OffsetDateTime timestamp) {
     new SimpleDatabaseTransaction<Void>() {
       @Override
       public void doInTransaction() {
+        databaseOperator.registerOperation(DatabaseOperations.RequestType.ADD_EXPENSE, timestamp);
         if (!databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
-        databaseOperator.addExpense(username, password, date, amount, description, timestamp);
+        databaseOperator.addExpense(username, date, amount, description);
       }
     }.yield();
   }
 
-  @Override
   public void orderPayment(String username, byte[] password, LocalDateTime date, BigDecimal amount, String description,
       String recipient, OffsetDateTime timestamp) {
     new SimpleDatabaseTransaction<Void>() {
       @Override
       public void doInTransaction() {
+        databaseOperator.registerOperation(DatabaseOperations.RequestType.ORDER_PAYMENT, timestamp);
         if (!databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
-        databaseOperator.orderPayment(username, password, date, amount, description, recipient, timestamp);
+        databaseOperator.orderPayment(username, date, amount, description, recipient);
       }
     }.yield();
   }

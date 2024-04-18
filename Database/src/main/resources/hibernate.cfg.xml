@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <!-- Postgresql configuration -->
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
+        <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
+        <property name="hibernate.current_session_context_class">thread</property>
+        <!-- Locally ran database -->
+        <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/blingbank?createDatabaseIfNotExist=true</property>
+        <property name="hibernate.default_schema">public</property>
+        <property name="hibernate.connection.username">postgres</property>
+        <property name="hibernate.connection.password">postgres</property>
+        <property name="hbm2ddl.auto">create-drop</property>
+        <property name="hibernate.hbm2ddl.import_files">/Scripts/hibernateExtensions.sql</property>
+        <!-- Print all SQL -->
+        <property name="hibernate.show_sql">false</property>
+        <property name="hibernate.format_sql">false</property>
+        <property name="hibernate.highlight_sql">false</property>
+        <!-- Entities -->
+        <mapping class="pt.tecnico.sirs.databaseserver.domain.BankAccount"/>
+        <mapping class="pt.tecnico.sirs.databaseserver.domain.BankAccountHolder"/>
+        <mapping class="pt.tecnico.sirs.databaseserver.domain.Movement"/>
+        <mapping class="pt.tecnico.sirs.databaseserver.domain.Approval"/>
+        <mapping class="pt.tecnico.sirs.databaseserver.domain.Payment"/>
+    </session-factory>
+</hibernate-configuration>

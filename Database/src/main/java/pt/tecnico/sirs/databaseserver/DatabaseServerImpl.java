@@ -5,7 +5,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.tecnico.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
-import pt.tecnico.sirs.databaseserver.repository.DatabaseOperations;
+import pt.tecnico.sirs.databaseserver.repository.DatabaseManager;
 import pt.tecnico.sirs.utils.Utils;
 import pt.tecnico.sirs.contract.databaseserver.DatabaseServiceGrpc.DatabaseServiceImplBase;
 import pt.tecnico.sirs.cryptology.Base;
@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public final class DatabaseServerImpl<DatabaseManager extends DatabaseOperations> extends DatabaseServiceImplBase {
+public final class DatabaseServerImpl extends DatabaseServiceImplBase {
   private final boolean debug;
   private final DatabaseManager databaseManager;
   private final DatabaseServerCryptographicManager crypto;

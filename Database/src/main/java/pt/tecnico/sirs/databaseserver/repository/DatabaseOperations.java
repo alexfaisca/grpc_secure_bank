@@ -8,20 +8,26 @@ import java.util.List;
 import javax.json.JsonArrayBuilder;
 
 public interface DatabaseOperations {
-  void createAccount(List<String> usernames, byte[] password, BigDecimal initialDeposit, OffsetDateTime timestamp);
 
-  void deleteAccount(String username, byte[] password, OffsetDateTime timestamp);
+  enum RequestType {
+    CREATE_ACCOUNT, DELETE_ACCOUNT, BALANCE, GET_MOVEMENTS, ADD_EXPENSE, ORDER_PAYMENT
+  }
+
+  void registerOperation(RequestType type, OffsetDateTime timestamp);
+
+  void createAccount(List<String> usernames, byte[] password, BigDecimal initialDeposit);
+
+  void deleteAccount(String username);
 
   boolean checkPassword(String username, byte[] password);
 
-  BigDecimal balance(String username, byte[] password, OffsetDateTime timestamp);
+  BigDecimal balance(String username);
 
-  JsonArrayBuilder getMovements(String username, byte[] password, OffsetDateTime timestamp);
+  JsonArrayBuilder getMovements(String username);
 
   @Deprecated
-  void addExpense(String username, byte[] password, LocalDateTime date, BigDecimal amount, String description,
-      OffsetDateTime timestamp);
+  void addExpense(String username, LocalDateTime date, BigDecimal amount, String description);
 
-  void orderPayment(String username, byte[] password, LocalDateTime date, BigDecimal amount, String description,
-      String recipient, OffsetDateTime timestamp);
+  void orderPayment(String username, LocalDateTime date, BigDecimal amount, String description,
+      String recipient);
 }
