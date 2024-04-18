@@ -1,4 +1,4 @@
-module pt.tecnico.sirs.cryptology {
+module pt.ulisboa.ist.sirs.cryptology {
   requires javax.json;
   requires org.apache.commons.codec;
 

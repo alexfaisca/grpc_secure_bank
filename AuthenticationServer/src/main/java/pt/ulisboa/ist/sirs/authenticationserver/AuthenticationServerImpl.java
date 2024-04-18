@@ -2,6 +2,7 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
+import io.grpc.ServerCall;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc.AuthenticationServerServiceImplBase;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
@@ -21,6 +22,10 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
 
   private boolean isDebug() {
     return debug;
+  }
+
+  @Override
+  public void diffieHellmanExchange(DiffieHellmanExchangeRequest request, StreamObserver<DiffieHellmanExchangeResponse> responseObserver) {
   }
 
   @Override

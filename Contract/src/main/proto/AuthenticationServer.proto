@@ -2,6 +2,15 @@ syntax = "proto3";
 
 package pt.ulisboa.ist.sirs.contract.authenticationserver;
 
+message DiffieHellmanExchangeRequest {
+    bytes clientPublic = 1;
+}
+
+message DiffieHellmanExchangeResponse {
+    bytes serverPublic = 1;
+    bytes parameters = 2;
+}
+
 message AuthenticateRequest {
     bytes request = 1;
 }
@@ -11,5 +20,6 @@ message AuthenticateResponse {
 }
 
 service AuthenticationServerService {
+    rpc diffieHellmanExchange(DiffieHellmanExchangeRequest) returns (DiffieHellmanExchangeResponse);
     rpc authenticate (AuthenticateRequest) returns (AuthenticateResponse);
 }

@@ -2,6 +2,7 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.CryptographicAuthenticationServerInterceptor;
 
 import java.io.*;
 import java.util.List;
@@ -18,15 +19,16 @@ public class AuthenticationServer {
 
     final String authenticationServerAddress = args.get(2);
     final int authenticationServerPort = Integer.parseInt(args.get(3));
+    final CryptographicAuthenticationServerInterceptor crypto = new CryptographicAuthenticationServerInterceptor();
     this.state = new AuthenticationServerState.AuthenticationServerStateBuilder(
-        args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug).build();
+        args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, crypto, debug).build();
 
     final BindableService AuthenticationServerService = new AuthenticationServerImpl(state, debug);
 
     TlsServerCredentials.Builder tlsBuilder = TlsServerCredentials.newBuilder()
         .keyManager(new File(args.get(4)), new File(args.get(5)));
     this.server = Grpc.newServerBuilderForPort(authenticationServerPort, tlsBuilder.build())
-        .addService(AuthenticationServerService)
+        .addService(ServerInterceptors.intercept(AuthenticationServerService, crypto))
         .build();
   }
 

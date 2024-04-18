@@ -15,12 +15,19 @@ import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
 import java.io.*;
 import java.nio.file.Paths;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.nio.file.Files;
 
+import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -93,6 +100,51 @@ public class UserService {
         .newBlockingStub(builder.authenticationServerChannel);
     this.bankingServiceStub = BankingServiceGrpc.newBlockingStub(builder.bankChannel);
     this.authenticate(OffsetDateTime.now().toString());
+  }
+
+  public void diffieHellman() throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidAlgorithmParameterException, NoSuchPaddingException, IOException {
+    System.out.println("ALICE: Generate DH keypair ...");
+    KeyPairGenerator aliceKpairGen = KeyPairGenerator.getInstance("DH");
+    aliceKpairGen.initialize(2048);
+    KeyPair keyPair = aliceKpairGen.generateKeyPair();
+
+    // Alice creates and initializes her DH KeyAgreement object
+    System.out.println("ALICE: Initialization ...");
+    KeyAgreement aliceKeyAgree = KeyAgreement.getInstance("DH");
+    aliceKeyAgree.init(keyPair.getPrivate());
+
+    // Alice encodes her public key, and sends it over to Bob.
+    AuthenticationServer.DiffieHellmanExchangeResponse ticketResponse = authenticationServerServiceStub.diffieHellmanExchange(
+      AuthenticationServer.DiffieHellmanExchangeRequest.newBuilder().setClientPublic(
+        ByteString.copyFrom(
+                keyPair.getPublic().getEncoded()
+        )).build());
+
+    /*
+     * Alice uses Bob's public key for the first (and only) phase
+     * of her version of the DH
+     * protocol.
+     * Before she can do so, she has to instantiate a DH public key
+     * from Bob's encoded key material.
+     */
+    KeyFactory aliceKeyFac = KeyFactory.getInstance("DH");
+    X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(ticketResponse.getServerPublic().toByteArray());
+    PublicKey bobPubKey = aliceKeyFac.generatePublic(x509KeySpec);
+    System.out.println("ALICE: Execute PHASE1 ...");
+    aliceKeyAgree.doPhase(bobPubKey, true);
+
+    byte[] sharedSecret = aliceKeyAgree.generateSecret();
+
+    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, 16, "AES");
+
+    // Instantiate AlgorithmParameters object from parameter encoding
+    // obtained from Bob
+    AlgorithmParameters aesParams = AlgorithmParameters.getInstance("AES");
+    aesParams.init(ticketResponse.getParameters().toByteArray());
+    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
+
+    byte[] iv = Operations.generateIV(cipher.getParameters().hashCode(), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
   }
 
   public void authenticate(String timestampString) {

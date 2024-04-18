@@ -10,6 +10,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -90,6 +91,10 @@ public final class Base {
         return Security.protect(input, secretKey, privateKey, iv);
       }
     }
+  }
+
+  public static Long generateRandom(long max) {
+    return (new SecureRandom()).nextLong(max);
   }
 
   public static SecretKey readSecretKey(String secretKeyPath) throws Exception {
