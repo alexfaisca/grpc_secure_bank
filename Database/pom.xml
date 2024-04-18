@@ -1,0 +1,199 @@
+<project>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+  <artifactId>DatabaseServer</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>${project.artifactId}</name>	
+
+
+  <properties>
+    <!-- project encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- main class -->
+    <main-class>pt.tecnico.sirs.databaseserver.DatabaseServer</main-class>
+    <!-- program arguments -->
+    <arg.service-name>BlingBankPersistence</arg.service-name>
+    <arg.server-name>Central Database</arg.server-name>
+    <arg.server-address>localhost</arg.server-address>
+    <arg.server-port>2000</arg.server-port>
+    <arg.path-iv>resources/crypto/session/iv</arg.path-iv>  
+    <arg.path-secret-key>resources/crypto/session/sessionKey</arg.path-secret-key>
+    <arg.path-public-key>resources/crypto/publicKey</arg.path-public-key>
+    <arg.path-private-key>resources/crypto/privateKey</arg.path-private-key>
+    <arg.path-server-trust-chain>resources/certificates/cert.pem</arg.path-server-trust-chain>
+    <arg.path-server-cert>resources/certificates/cert.pem</arg.path-server-cert>
+    <arg.path-server-key>resources/certificates/key.key</arg.path-server-key>
+    <!-- java orm -->
+    <version.hibernate>5.6.15.Final</version.hibernate>
+    <version.antlr4-runtime>4.0</version.antlr4-runtime>
+    <version.jakarta-persistence-api>3.1.0</version.jakarta-persistence-api>
+    <version.jakarta-xml-bind>3.0.0</version.jakarta-xml-bind>
+    <version.postgres-sql>42.6.0</version.postgres-sql>
+    <version.slf4j-logger>1.7.5</version.slf4j-logger>
+	<!-- maven plugins -->
+    <version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
+    <bytecode-level>17</bytecode-level>
+    <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+      <artifactId>Contract</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+	  <artifactId>Cryptology</artifactId>
+  	  <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>${version.hibernate}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-envers</artifactId>
+      <version>${version.hibernate}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-jpamodelgen</artifactId>
+      <version>${version.hibernate}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-ehcache</artifactId>
+      <version>${version.hibernate}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${version.postgres-sql}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.antlr</groupId>
+      <artifactId>antlr4-runtime</artifactId>
+      <version>${version.antlr4-runtime}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.persistence</groupId>
+      <artifactId>jakarta.persistence-api</artifactId>
+      <version>${version.jakarta-persistence-api}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>${version.jakarta-xml-bind}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${version.slf4j-logger}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${version.slf4j-logger}</version>
+    </dependency>
+  </dependencies>
+  
+  <build>
+	<plugins>
+	  <plugin>
+		<groupId>org.codehaus.mojo</groupId>
+		<artifactId>exec-maven-plugin</artifactId>
+		<version>${version.exec-maven-plugin}</version>
+		<executions>
+		  <execution>
+			<goals>
+			  <goal>java</goal>
+			</goals>
+		  </execution>
+		</executions>
+		<configuration>
+          <executable>java</executable>
+          <cleanupDaemonThreads>false</cleanupDaemonThreads>
+          <arguments>
+            <argument>-classpath</argument>
+            <classpath />
+            <argument>${main-class}</argument>
+          </arguments>
+          <environmentVariables>
+            <service-name>${arg.service-name}</service-name>
+            <server-name>${arg.server-name}</server-name>
+            <server-address>${arg.server-address}</server-address>
+            <server-port>${arg.server-port}</server-port>
+            <path-iv>${arg.path-iv}</path-iv>
+            <path-secret-key>${arg.path-secret-key}</path-secret-key>
+            <path-public-key>${arg.path-public-key}</path-public-key>
+            <path-private-key>${arg.path-private-key}</path-private-key>
+            <path-server-trust-chain>${arg.path-server-trust-chain}</path-server-trust-chain>
+            <path-server-cert>${arg.path-server-cert}</path-server-cert>
+            <path-server-key>${arg.path-server-key}</path-server-key>
+          </environmentVariables>
+		</configuration>
+	  </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${version.maven-compiler-plugin}</version>
+        <configuration>
+          <source>${bytecode-level}</source>
+          <target>${bytecode-level}</target>
+        </configuration>
+      </plugin>
+    </plugins>
+
+    <!--
+	<plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.0.0</version>
+            <executions>
+                <execution>
+                    <id>exec-start-script</id>
+                    <phase>validate</phase>
+                    <goals>
+                        <goal>exec</goal>
+                    </goals>
+                    <configuration>
+                        <executable>Scripts/init.sh</executable>
+                        <arguments>
+                            <argument>database</argument>
+                        </arguments>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+	<plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.0.0</version>
+            <executions>
+                <execution>
+                    <id>exec-end-script</id>
+                    <phase>install</phase>
+                    <goals>
+                        <goal>exec</goal>
+                    </goals>
+                    <configuration>
+                        <executable>terminate.sh</executable>
+                        <arguments>
+                            <argument>database</argument>
+                        </arguments>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>-->
+
+  </build>
+
+</project>
+
+

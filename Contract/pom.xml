@@ -1,0 +1,131 @@
+<project>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+  <artifactId>Contract</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>${project.artifactId}</name>	
+
+  <properties>
+    <!-- project encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- grpc $ dependencies -->
+	<version.grpc>1.59.0</version.grpc>
+    <version.protoc>3.12.0</version.protoc> <!-- aligned with the gRPC dependency version -->
+    <version.protobuf-java>3.7.0</version.protobuf-java>
+    <version.protobuf-java-util>3.7.0</version.protobuf-java-util>
+    <version.javax.annotation-api>1.2</version.javax.annotation-api>
+    <!-- maven plugins & dependencies -->
+    <version.protobuf-maven-plugin>0.6.1</version.protobuf-maven-plugin>
+    <version.os-maven-plugin>1.4.1.Final</version.os-maven-plugin>
+    <version.protoc>3.7.0</version.protoc>
+    <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
+    <bytecode-level>17</bytecode-level>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- gRPC BoM defines a set of versions for sub-dependencies. -->
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-bom</artifactId>
+        <version>${version.grpc}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+    </dependency>
+    <dependency>
+	  <groupId>io.grpc</groupId>
+	  <artifactId>grpc-testing</artifactId>
+	  <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>${version.protobuf-java}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java-util</artifactId>
+      <version>${version.protobuf-java-util}</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+	  <version>${version.javax.annotation-api}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+
+    <!-- proto file compilation-->
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>${version.os-maven-plugin}</version>
+      </extension>
+    </extensions>
+
+    <plugins>
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>${version.protobuf-maven-plugin}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${version.protoc}:exe:${os.detected.classifier}</protocArtifact>
+            <pluginId>grpc-java</pluginId>
+            <pluginArtifact>io.grpc:protoc-gen-grpc-java:${version.grpc}:exe:${os.detected.classifier}</pluginArtifact>
+            <additionalProtoPathElements>
+            <additionalProtoPathElement>${project.basedir}/src</additionalProtoPathElement>
+            </additionalProtoPathElements>
+            <protocArtifact>com.google.protobuf:protoc:${version.protoc}:exe:${os.detected.classifier}</protocArtifact>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${version.maven-compiler-plugin}</version>
+        <configuration>
+          <source>${bytecode-level}</source>
+          <target>${bytecode-level}</target>
+        </configuration>
+      </plugin>
+    </plugins>
+
+  </build>
+
+</project>
+
+

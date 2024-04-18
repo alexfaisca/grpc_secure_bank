@@ -1,0 +1,35 @@
+<project>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+    <artifactId>BlingBank</artifactId>
+    <version>1.0.0</version>
+  </parent>
+
+  <artifactId>Cryptology</artifactId>
+  <version>1.0.0</version>
+
+  <properties>
+    <!-- project encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- dependencies' versioning -->
+    <version.apache-commons-codec>1.13</version.apache-commons-codec>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.json</artifactId>
+      <version>${version.javax-json}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>${version.apache-commons-codec}</version>
+    </dependency>
+  </dependencies>
+
+</project>

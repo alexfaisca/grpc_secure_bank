@@ -1,0 +1,95 @@
+<project>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+  <artifactId>Bank</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>${project.artifactId}</name>
+
+  <properties>
+    <!-- project encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- main class -->
+    <main-class>pt.tecnico.sirs.bankserver.BankServer</main-class>
+    <!-- program arguments -->
+    <arg.service-name>BlingBank</arg.service-name>
+    <arg.server-name>Central Bank</arg.server-name>
+    <arg.server-address>localhost</arg.server-address>
+    <arg.server-port>2001</arg.server-port>
+    <arg.database-address>localhost</arg.database-address>
+    <arg.database-port>2000</arg.database-port>
+    <arg.path-server-trust-chain>resources/certificates/cert.pem</arg.path-server-trust-chain>
+    <arg.path-server-cert>resources/certificates/cert.pem</arg.path-server-cert>
+    <arg.path-server-key>resources/certificates/key.key</arg.path-server-key>
+    <!-- maven plugins -->
+    <version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
+    <bytecode-level>17</bytecode-level>
+    <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+      <artifactId>Contract</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+	  <artifactId>Cryptology</artifactId>
+	  <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+	<plugins>
+	  <plugin>
+		<groupId>org.codehaus.mojo</groupId>
+	    <artifactId>exec-maven-plugin</artifactId>
+	    <version>${version.exec-maven-plugin}</version>
+	    <executions>
+		  <execution>
+		    <goals>
+			  <goal>exec</goal>
+		    </goals>
+		  </execution>
+	    </executions>
+        <configuration>
+          <executable>java</executable>
+          <cleanupDaemonThreads>false</cleanupDaemonThreads>
+          <arguments>
+            <argument>-classpath</argument>
+            <classpath />
+            <argument>${main-class}</argument>
+          </arguments>
+          <environmentVariables>
+            <service-name>${arg.service-name}</service-name>
+            <server-name>${arg.server-name}</server-name>
+            <server-address>${arg.server-address}</server-address>
+            <server-port>${arg.server-port}</server-port>
+            <database-address>${arg.database-address}</database-address>
+            <database-port>${arg.database-port}</database-port>
+            <path-server-trust-chain>${arg.path-server-trust-chain}</path-server-trust-chain>
+            <path-server-cert>${arg.path-server-cert}</path-server-cert>
+            <path-server-key>${arg.path-server-key}</path-server-key>
+          </environmentVariables>
+        </configuration>
+	  </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${version.maven-compiler-plugin}</version>
+        <configuration>
+          <source>${bytecode-level}</source>
+          <target>${bytecode-level}</target>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>
+
+

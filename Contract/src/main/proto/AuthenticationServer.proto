@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pt.tecnico.sirs.contract.authenticationserver;
+
+message AuthenticateRequest {
+    bytes request = 1;
+}
+  
+message AuthenticateResponse {
+    bytes response = 1;
+}
+
+service AuthenticationServerService {
+    rpc authenticate (AuthenticateRequest) returns (AuthenticateResponse);
+}

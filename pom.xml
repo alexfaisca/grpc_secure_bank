@@ -1,0 +1,87 @@
+          <project>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+  <artifactId>BlingBank</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <name>${project.artifactId}</name>	
+
+  <modules>
+    <module>Cryptology</module>
+    <module>Contract</module>
+    <module>Database</module>
+    <module>Bank</module>
+    <module>User</module>
+    <module>AuthenticationServer</module>
+  </modules>
+
+  <!-- Project global properties -->
+  <properties>
+    <!-- project encodings  -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- java version -->
+    <version.java>17</version.java>
+    <!-- maven version -->
+    <version.maven> 3.9.0 </version.maven>
+    <!-- maven plugins & plugin's dependencies versions -->
+    <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
+    <version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>
+    <version.jakarta-xml-bind-api>4.0.0</version.jakarta-xml-bind-api>
+    <!-- project source and target bytecode level (necessary for mainless .jar file generation) -->
+    <version.maven-compiler-plugin.source>1.9</version.maven-compiler-plugin.source>
+    <version.maven-compiler-plugin.target>1.9</version.maven-compiler-plugin.target>
+    <!-- other -->
+    <version.javax-json>1.0.4</version.javax-json>
+  </properties>
+
+  <!-- Project global dependencies -->
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>${version.maven}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>${version.jakarta-xml-bind-api}</version>
+    </dependency>
+  </dependencies>
+
+  <!-- project global build definitions -->
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${version.maven-compiler-plugin}</version>
+        <configuration>
+          <source>${version.java}</source>
+          <target>${version.java}</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!-- project developers -->
+  <developers>
+    <developer>
+      <id>ist199540</id>
+      <name>Pedro José dos Santos Aguiar Lameiras</name>
+      <email>pedrolameiras@tecnico.ulisboa.pt</email>
+      <organization>Instituto Superior Tecnico da Universidade de Lisboa</organization>
+    </developer>
+    <developer>
+      <id>ist1100120</id>
+      <name>Alexandre Faísca Coelho</name>
+      <email>alexandre.f.coelho@tecnico.ulisboa.pt</email>
+      <organization>Instituto Superior Tecnico da Universidade de Lisboa</organization>
+    </developer>
+  </developers>
+
+</project>
+
+

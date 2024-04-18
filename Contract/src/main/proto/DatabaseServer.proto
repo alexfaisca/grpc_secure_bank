@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package pt.tecnico.sirs.contract.databaseserver;
+
+message AuthenticateRequest {
+  bytes request = 1;
+}
+
+message AuthenticateResponse {
+  bytes response = 1;
+}
+
+message StillAliveRequest {
+  bytes request = 1;
+}
+
+message StillAliveResponse {
+  bytes response = 1;
+}
+
+message BalanceRequest {
+  bytes request = 1;
+}
+
+message BalanceResponse {
+  bytes response = 1;
+}
+
+message CreateAccountRequest {
+  bytes request = 1;
+}
+
+message CreateAccountResponse {
+  bytes response = 1;
+}
+
+message DeleteAccountRequest {
+  bytes request = 1;
+}
+
+message DeleteAccountResponse {
+  bytes response = 1;
+}
+
+message GetMovementsRequest {
+  bytes request = 1;
+}
+
+message GetMovementsResponse {
+  bytes response = 1;
+}
+
+message AddExpenseRequest {
+  bytes request = 1;
+}
+
+message AddExpenseResponse {
+  bytes response = 1;
+}
+
+message OrderPaymentRequest {
+  bytes request = 1;
+}
+
+message OrderPaymentResponse {
+  bytes response = 1;
+}
+
+
+service DatabaseService {
+  rpc authenticate (AuthenticateRequest) returns (AuthenticateResponse);
+  rpc stillAlive (StillAliveRequest) returns (StillAliveResponse);
+  rpc createAccount (CreateAccountRequest) returns (CreateAccountResponse);
+  rpc deleteAccount (DeleteAccountRequest) returns (DeleteAccountResponse);
+  rpc balance (BalanceRequest) returns (BalanceResponse);
+  rpc getMovements (GetMovementsRequest) returns (GetMovementsResponse);
+  rpc addExpense (AddExpenseRequest) returns (AddExpenseResponse);
+  rpc orderPayment (OrderPaymentRequest) returns (OrderPaymentResponse);
+}
