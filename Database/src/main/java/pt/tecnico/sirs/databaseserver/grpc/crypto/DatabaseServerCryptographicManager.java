@@ -2,8 +2,8 @@ package pt.tecnico.sirs.databaseserver.grpc.crypto;
 
 import pt.tecnico.sirs.contract.databaseserver.DatabaseServer.*;
 
-import pt.tecnico.sirs.cryptology.Base;
-import pt.tecnico.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
 public class DatabaseServerCryptographicManager extends DatabaseServerCryptographicCore implements Base.KeyManager {
   private final int MOCK_HASH = 0;

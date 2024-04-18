@@ -5,7 +5,7 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.sirs.contract.authenticationserver.AuthenticationServer.*;
 import pt.tecnico.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc.AuthenticationServerServiceImplBase;
 import pt.tecnico.sirs.authenticationserver.domain.AuthenticationServerState;
-import pt.tecnico.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.json.*;
 import java.time.OffsetDateTime;

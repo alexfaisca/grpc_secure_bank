@@ -7,7 +7,7 @@ import pt.tecnico.sirs.databaseserver.dto.PaymentDto;
 import pt.tecnico.sirs.databaseserver.repository.DatabaseOperations;
 import pt.tecnico.sirs.databaseserver.repository.service.engine.*;
 import pt.tecnico.sirs.databaseserver.repository.service.engine.impl.*;
-import pt.tecnico.sirs.utils.exceptions.ReplayAttackException;
+import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package pt.tecnico.sirs.utils;
+package pt.ulisboa.ist.sirs.utils;
 
 import java.io.*;
 import java.util.List;

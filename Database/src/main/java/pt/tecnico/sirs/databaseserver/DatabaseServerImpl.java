@@ -6,12 +6,12 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.tecnico.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
 import pt.tecnico.sirs.databaseserver.repository.DatabaseManager;
-import pt.tecnico.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.tecnico.sirs.contract.databaseserver.DatabaseServiceGrpc.DatabaseServiceImplBase;
-import pt.tecnico.sirs.cryptology.Base;
-import pt.tecnico.sirs.cryptology.Operations;
-import pt.tecnico.sirs.utils.exceptions.ReplayAttackException;
-import pt.tecnico.sirs.utils.exceptions.TamperedMessageException;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
+import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
 import javax.json.*;
 

@@ -1,9 +1,9 @@
 package pt.tecnico.sirs.authenticationserver.grpc;
 
-import pt.tecnico.sirs.cryptology.Operations;
-import pt.tecnico.sirs.cryptology.Base;
-import pt.tecnico.sirs.utils.Utils;
-import pt.tecnico.sirs.utils.exceptions.ReplayAttackException;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
 
 import javax.json.Json;
 import java.nio.ByteBuffer;

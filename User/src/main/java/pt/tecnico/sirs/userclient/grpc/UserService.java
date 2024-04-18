@@ -6,12 +6,12 @@ import pt.tecnico.sirs.contract.bankserver.BankingServiceGrpc;
 import pt.tecnico.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.tecnico.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc;
 import pt.tecnico.sirs.contract.bankserver.BankServer.*;
-import pt.tecnico.sirs.cryptology.Base;
-import pt.tecnico.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.tecnico.sirs.userclient.grpc.crypto.BankingClientCryptographicManager;
-import pt.tecnico.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.Utils;
 import com.google.protobuf.ByteString;
-import pt.tecnico.sirs.utils.exceptions.TamperedMessageException;
+import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
 import java.io.*;
 import java.nio.file.Paths;

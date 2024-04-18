@@ -37,7 +37,7 @@
       <version>1.0.0</version>
     </dependency>
     <dependency>
-      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+      <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
 	  <artifactId>Cryptology</artifactId>
 	  <version>1.0.0</version>
     </dependency>

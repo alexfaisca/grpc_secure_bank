@@ -1,4 +1,4 @@
-package pt.tecnico.sirs.cryptology;
+package pt.ulisboa.ist.sirs.cryptology;
 
 import java.security.*;
 import java.util.Arrays;

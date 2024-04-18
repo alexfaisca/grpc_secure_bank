@@ -1,6 +1,6 @@
 package pt.tecnico.sirs.databaseserver;
 
-import pt.tecnico.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.tecnico.sirs.databaseserver.grpc.DatabaseService;
 import pt.tecnico.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
 import pt.tecnico.sirs.databaseserver.repository.DatabaseManager;

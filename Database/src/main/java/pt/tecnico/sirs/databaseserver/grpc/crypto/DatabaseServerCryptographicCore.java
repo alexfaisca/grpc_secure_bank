@@ -3,8 +3,8 @@ package pt.tecnico.sirs.databaseserver.grpc.crypto;
 import com.google.protobuf.ByteString;
 import pt.tecnico.sirs.contract.databaseserver.DatabaseServer.*;
 
-import pt.tecnico.sirs.cryptology.Base;
-import pt.tecnico.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
 public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
 

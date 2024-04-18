@@ -1,4 +1,4 @@
-package pt.tecnico.sirs.utils.exceptions;
+package pt.ulisboa.ist.sirs.utils.exceptions;
 
 public class ReplayAttackException extends RuntimeException {
   public ReplayAttackException() {

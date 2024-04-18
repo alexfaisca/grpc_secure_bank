@@ -6,5 +6,13 @@ public abstract class DatabaseTransaction implements TransactionCallback {
   }
 
   @Override
+  public void beforeOperation() {
+  }
+
+  @Override
   public abstract void doInTransaction();
+
+  @Override
+  public void afterOperation() {
+  }
 }

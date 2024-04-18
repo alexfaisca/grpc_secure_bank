@@ -31,7 +31,9 @@ public final class HibernateUtil {
     if (!HibernateUtil.getSessionFactory().getCurrentSession().getTransaction().isActive()) {
       transaction.begin();
       try {
+        transactionCallback.beforeOperation();
         transactionCallback.doInTransaction();
+        transactionCallback.afterOperation();
         transaction.commit();
       } catch (Exception e) {
         transaction.rollback();

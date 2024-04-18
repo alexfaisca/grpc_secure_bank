@@ -1,6 +1,6 @@
-package pt.tecnico.sirs.cryptology;
+package pt.ulisboa.ist.sirs.cryptology;
 
-import pt.tecnico.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
