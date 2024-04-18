@@ -2,7 +2,7 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+  <groupId>pt.ulisboa.ist.sirs</groupId>
   <artifactId>DatabaseServer</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <!-- main class -->
-    <main-class>pt.tecnico.sirs.databaseserver.DatabaseServer</main-class>
+    <main-class>pt.ulisboa.ist.sirs.databaseserver.DatabaseServer</main-class>
     <!-- program arguments -->
     <arg.service-name>BlingBankPersistence</arg.service-name>
     <arg.server-name>Central Database</arg.server-name>
@@ -42,12 +42,12 @@
 
   <dependencies>
     <dependency>
-      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+      <groupId>pt.ulisboa.ist.sirs</groupId>
       <artifactId>Contract</artifactId>
       <version>1.0.0</version>
     </dependency>
     <dependency>
-      <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+      <groupId>pt.ulisboa.ist.sirs</groupId>
 	  <artifactId>Cryptology</artifactId>
   	  <version>1.0.0</version>
     </dependency>

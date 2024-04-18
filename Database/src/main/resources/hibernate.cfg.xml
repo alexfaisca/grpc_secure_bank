@@ -20,10 +20,10 @@
         <property name="hibernate.format_sql">false</property>
         <property name="hibernate.highlight_sql">false</property>
         <!-- Entities -->
-        <mapping class="pt.tecnico.sirs.databaseserver.domain.BankAccount"/>
-        <mapping class="pt.tecnico.sirs.databaseserver.domain.BankAccountHolder"/>
-        <mapping class="pt.tecnico.sirs.databaseserver.domain.Movement"/>
-        <mapping class="pt.tecnico.sirs.databaseserver.domain.Approval"/>
-        <mapping class="pt.tecnico.sirs.databaseserver.domain.Payment"/>
+        <mapping class="pt.ulisboa.ist.sirs.databaseserver.domain.BankAccount"/>
+        <mapping class="pt.ulisboa.ist.sirs.databaseserver.domain.BankAccountHolder"/>
+        <mapping class="pt.ulisboa.ist.sirs.databaseserver.domain.Movement"/>
+        <mapping class="pt.ulisboa.ist.sirs.databaseserver.domain.Approval"/>
+        <mapping class="pt.ulisboa.ist.sirs.databaseserver.domain.Payment"/>
     </session-factory>
 </hibernate-configuration>

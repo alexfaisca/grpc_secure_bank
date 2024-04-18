@@ -2,7 +2,7 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+  <groupId>pt.ulisboa.ist.sirs</groupId>
   <artifactId>User</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
@@ -13,7 +13,7 @@
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
  	<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   	<!-- main class -->
-    <main-class>pt.tecnico.sirs.userclient.UserClientMain</main-class>
+    <main-class>pt.ulisboa.ist.sirs.userclient.UserClientMain</main-class>
   	<!-- program arguments -->
   	<arg.server-address>localhost</arg.server-address>
   	<arg.server-port>2001</arg.server-port>
@@ -32,12 +32,12 @@
 
   <dependencies>
 	<dependency>
-	  <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+	  <groupId>pt.ulisboa.ist.sirs</groupId>
 	  <artifactId>Cryptology</artifactId>
 	  <version>1.0.0</version>
 	</dependency>
     <dependency>
-      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+      <groupId>pt.ulisboa.ist.sirs</groupId>
       <artifactId>Contract</artifactId>
       <version>1.0.0</version>
     </dependency>

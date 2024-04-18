@@ -2,7 +2,7 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+  <groupId>pt.ulisboa.ist.sirs</groupId>
   <artifactId>BlingBank</artifactId>
   <version>1.0.0</version>
   <packaging>pom</packaging>

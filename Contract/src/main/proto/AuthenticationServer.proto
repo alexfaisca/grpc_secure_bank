@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pt.tecnico.sirs.contract.authenticationserver;
+package pt.ulisboa.ist.sirs.contract.authenticationserver;
 
 message AuthenticateRequest {
     bytes request = 1;

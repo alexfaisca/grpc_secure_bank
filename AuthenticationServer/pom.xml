@@ -2,7 +2,7 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+  <groupId>pt.ulisboa.ist.sirs</groupId>
   <artifactId>AuthenticationServer</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
@@ -13,7 +13,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <!-- main class -->
-    <main-class>pt.tecnico.sirs.authenticationserver.AuthenticationServer</main-class>
+    <main-class>pt.ulisboa.ist.sirs.authenticationserver.AuthenticationServer</main-class>
     <!-- program arguments -->
     <arg.service-name>BlingBank</arg.service-name>
     <arg.server-name>Authentication Server</arg.server-name>
@@ -29,12 +29,12 @@
 
   <dependencies>
     <dependency>
-      <groupId>pt.tecnico.sirs.2023-2024.a28</groupId>
+      <groupId>pt.ulisboa.ist.sirs</groupId>
       <artifactId>Contract</artifactId>
       <version>1.0.0</version>
     </dependency>
     <dependency>
-      <groupId>pt.ulisboa.ist.sirs.2023-2024.a28</groupId>
+      <groupId>pt.ulisboa.ist.sirs</groupId>
 	  <artifactId>Cryptology</artifactId>
 	  <version>1.0.0</version>
     </dependency>
