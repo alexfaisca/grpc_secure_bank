@@ -142,6 +142,11 @@ public class UserService {
               ((temp[2] & 0xFF) << 8) |
               ((temp[3] & 0xFF));
       byte[] iv = Operations.generateIV(number, aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
+
+      File clientDirectory = new File("resources/crypto/client/");
+      if (!clientDirectory.exists())
+        if (!clientDirectory.mkdirs())
+          throw new RuntimeException("Could not store client key");
       Utils.writeBytesToFile(aesKey.getEncoded(), "resources/crypto/client/symmetricKey");
       Utils.writeBytesToFile(iv, "resources/crypto/client/iv");
     } catch (StatusRuntimeException e) {
@@ -175,6 +180,10 @@ public class UserService {
           || !ticketJson.getString("timestampString").equals(timestampString))
         throw new TamperedMessageException();
       // Save session key and session iv
+      File clientDirectory = new File("resources/crypto/session/");
+      if (!clientDirectory.exists())
+        if (!clientDirectory.mkdirs())
+          throw new RuntimeException("Could not store client key");
       Utils.writeBytesToFile(Utils.hexToByte(ticketJson.getString("sessionKey")),"resources/crypto/session/sessionKey");
       Utils.writeBytesToFile(Utils.hexToByte(ticketJson.getString("sessionIv")),"resources/crypto/session/iv");
 
