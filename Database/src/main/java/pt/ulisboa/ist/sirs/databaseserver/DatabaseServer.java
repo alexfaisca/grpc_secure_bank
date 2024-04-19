@@ -1,6 +1,7 @@
 package pt.ulisboa.ist.sirs.databaseserver;
 
 import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseService;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.repository.DatabaseManager;
@@ -22,6 +23,7 @@ public class DatabaseServer {
     this.debug = debug;
     final String databaseAddress = args.get(2);
     final int databasePort = Integer.parseInt(args.get(3));
+    final DatabaseServerCryptographicInterceptor crypto = new DatabaseServerCryptographicInterceptor();
 
     this.state = new DatabaseManager(
         new DatabaseService(args.get(0), args.get(1), databaseAddress, databasePort, debug));
@@ -39,12 +41,12 @@ public class DatabaseServer {
     // "Last Tuesday's dinner", "Alice", OffsetDateTime.now());
 
     final DatabaseServerCryptographicManager cryptoCore = new DatabaseServerCryptographicManager(
-        args.get(4), args.get(5), args.get(6), args.get(7));
+            crypto, args.get(6), args.get(7));
 
     this.server = Grpc.newServerBuilderForPort(
         databasePort,
         TlsServerCredentials.newBuilder().keyManager(new File(args.get(9)), new File(args.get(10))).build())
-        .addService(new DatabaseServerImpl(state, cryptoCore, debug)).build();
+        .addService(ServerInterceptors.intercept(new DatabaseServerImpl(state, cryptoCore, debug), crypto)).build();
   }
 
   private void serverStartup() throws IOException {
@@ -68,6 +70,7 @@ public class DatabaseServer {
           + state.getService().getServerName() + "' server at " + state.getService().getServerAddress() + ":"
           + state.getService().getServerPort());
     state.shutDown();
+    server.shutdownNow();
     System.out.println("Shutting down.");
     System.exit(0);
   }

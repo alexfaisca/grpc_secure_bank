@@ -191,7 +191,9 @@ public class AuthenticationService {
                 .add("targetTicket", Utils.byteToHex(
                     Operations.encryptData(
                         Base.readSecretKey("resources/crypto/database/symmetricKey"),
-                        Utils.serializeJson(Json.createObjectBuilder().add("source", source)
+                        Utils.serializeJson(
+                            Json.createObjectBuilder()
+                            .add("source", source)
                             .add("sessionKey", sessionKeyHex).add("sessionIv", sessionIvHex).build()),
                         Base.readIv("resources/crypto/database/iv"))))
                 .build()),

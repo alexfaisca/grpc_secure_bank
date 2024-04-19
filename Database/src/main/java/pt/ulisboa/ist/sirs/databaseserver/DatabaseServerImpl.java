@@ -3,6 +3,7 @@ package pt.ulisboa.ist.sirs.databaseserver;
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import pt.ulisboa.ist.sirs.contract.bankserver.BankServer;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc.DatabaseServiceImplBase;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
@@ -18,6 +19,7 @@ import javax.json.*;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLOutput;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -29,7 +31,6 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
   private final DatabaseManager databaseManager;
   private final DatabaseServerCryptographicManager crypto;
   private final List<OffsetDateTime> timestamps = new ArrayList<>();
-  private Integer nonce;
 
   public DatabaseServerImpl(DatabaseManager databaseManager, DatabaseServerCryptographicManager crypto, boolean debug) {
     this.debug = debug;
@@ -53,14 +54,6 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
     return getTimestamps().contains(timestamp);
   }
 
-  public Integer getNonce() {
-    return this.nonce;
-  }
-
-  public void setNonce(Integer nonce) {
-    this.nonce = nonce;
-  }
-
   @Override
   public void authenticate(AuthenticateRequest request, StreamObserver<AuthenticateResponse> responseObserver) {
     try {
@@ -73,30 +66,27 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       addTimestamp(OffsetDateTime.parse(timestampString));
 
       JsonObject ticketJson = Utils.deserializeJson(
-          Operations.decryptData(
-              Base.readSecretKey("resources/crypto/database/symmetricKey"),
-              Utils.hexToByte(authenticateJson.getString("ticket")),
-              Base.readIv("resources/crypto/database/iv")));
+        Operations.decryptData(
+          Base.readSecretKey("resources/crypto/database/symmetricKey"),
+          Utils.hexToByte(authenticateJson.getString("ticket")),
+          Base.readIv("resources/crypto/database/iv")
+      ));
 
       if (!ticketJson.getString("source").equals("user"))
         throw new TamperedMessageException();
 
       // Store session key and session iv
-      Files.write(Paths.get("resources/crypto/session/sessionKey"),
-          Utils.hexToByte(ticketJson.getString("sessionKey")));
-      Files.write(Paths.get("resources/crypto/session/iv"), Utils.hexToByte(ticketJson.getString("sessionIv")));
+      crypto.createSession(Utils.hexToByte(ticketJson.getString("sessionKey")),  Utils.hexToByte(ticketJson.getString("sessionIv")));
 
       // Needham-Schroeder step 4
-      setNonce(new Random().nextInt());
-      responseObserver.onNext(AuthenticateResponse.newBuilder().setResponse(
-          ByteString.copyFrom(
-              Operations.encryptData(
-                  Base.readSecretKey("resources/crypto/session/sessionKey"),
-                  Utils.serializeJson(Json.createObjectBuilder().add("nonce", getNonce()).build()),
-                  Base.readIv("resources/crypto/session/iv"))))
-          .build());
+      crypto.setNonce((new Random()).nextInt());
+      responseObserver.onNext(crypto.encrypt(AuthenticateResponse.newBuilder().setResponse(
+        ByteString.copyFrom(
+          Utils.serializeJson(Json.createObjectBuilder().add("nonce", crypto.getNonce()).build())
+        )).build()));
       responseObserver.onCompleted();
     } catch (Exception e) {
+      e.printStackTrace();
       responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
     }
   }
@@ -105,17 +95,17 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
   public void stillAlive(StillAliveRequest request, StreamObserver<StillAliveResponse> responseObserver) {
     try {
       // Needham-Schroeder step 5
-      JsonObject stillAliveJson = Utils.deserializeJson(Operations.decryptData(
-          Base.readSecretKey("resources/crypto/session/sessionKey"),
-          request.getRequest().toByteArray(),
-          Base.readIv("resources/crypto/session/iv")));
+      JsonObject stillAliveJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
 
-      if (nonce - stillAliveJson.getInt("nonce") != 1)
+      if (!crypto.checkNonce(stillAliveJson.getInt("nonce") + 1))
         throw new TamperedMessageException();
 
-      responseObserver.onNext(StillAliveResponse.newBuilder().build());
+      crypto.validateSession(Utils.hexToByte(stillAliveJson.getString("publicKey")));
+
+      responseObserver.onNext(crypto.encrypt(StillAliveResponse.newBuilder().build()));
       responseObserver.onCompleted();
     } catch (Exception e) {
+      e.printStackTrace();
       responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
     }
   }
@@ -136,7 +126,7 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
 
       if (isDebug())
         System.out.printf("\t\tUsername: %s\n\t\tPassword (Hex): %s\n", String.join(" ", usernames),
-            Utils.byteToHex(password));
+          Utils.byteToHex(password));
 
       databaseManager.createAccount(usernames, password, BigDecimal.ZERO, timestamp);
 
@@ -194,9 +184,10 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       BigDecimal balance = databaseManager.balance(username, password, timestamp);
 
       responseObserver.onNext(crypto.encrypt(BalanceResponse.newBuilder().setResponse(
-          ByteString.copyFrom(
-              Utils.serializeJson(Utils.createJson(List.of("balance"), List.of(balance.toString())))))
-          .build()));
+        ByteString.copyFrom(
+          Utils.serializeJson(Utils.createJson(List.of("balance"), List.of(balance.toString())))))
+        .build()
+      ));
       responseObserver.onCompleted();
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: balance successful");
@@ -225,7 +216,8 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       JsonObject responseJson = Json.createObjectBuilder().add("movements", expenses).build();
 
       responseObserver.onNext(crypto.encrypt(GetMovementsResponse.newBuilder().setResponse(
-          ByteString.copyFrom(Utils.serializeJson(responseJson))).build()));
+        ByteString.copyFrom(Utils.serializeJson(responseJson))).build()
+      ));
       responseObserver.onCompleted();
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: get account movements successful");
@@ -252,8 +244,8 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
 
       if (isDebug())
         System.out.printf(
-            "\t\tUsername: %s\n\t\tPassword (Hex): %s\n\t\tDate: %s\n\t\tAmount: %s\n\t\tDescription: %s\n", username,
-            Utils.byteToHex(password), date, amount, description);
+          "\t\tUsername: %s\n\t\tPassword (Hex): %s\n\t\tDate: %s\n\t\tAmount: %s\n\t\tDescription: %s\n", username,
+          Utils.byteToHex(password), date, amount, description);
 
       // databaseManager.addExpense(username, password, date, amount, description,
       // timestamp);
@@ -285,8 +277,8 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
 
       if (isDebug())
         System.out.printf(
-            "\t\tUsername: %s\n\t\tPassword (Hex): %s\n\t\tRecipient: %s\n\t\tDate: %s\n\t\tAmount: %s\n\t\tDescription: %s\n",
-            username, Utils.byteToHex(password), recipient, date, amount, description);
+          "\t\tUsername: %s\n\t\tPassword (Hex): %s\n\t\tRecipient: %s\n\t\tDate: %s\n\t\tAmount: %s\n\t\tDescription: %s\n",
+          username, Utils.byteToHex(password), recipient, date, amount, description);
 
       databaseManager.orderPayment(username, password, date, amount, description, recipient, timestamp);
 

@@ -6,7 +6,7 @@ import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc.AuthenticationServerServiceImplBase;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
-import pt.ulisboa.ist.sirs.authenticationserver.grpc.CryptographicAuthenticationServerInterceptor;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.json.*;
@@ -15,9 +15,9 @@ import java.time.OffsetDateTime;
 public final class AuthenticationServerImpl extends AuthenticationServerServiceImplBase {
   private final boolean debug;
   private final AuthenticationServerState state;
-  private final CryptographicAuthenticationServerInterceptor crypto;
+  private final AuthenticationServerCryptographicInterceptor crypto;
 
-  public AuthenticationServerImpl(AuthenticationServerState state, CryptographicAuthenticationServerInterceptor crypto,
+  public AuthenticationServerImpl(AuthenticationServerState state, AuthenticationServerCryptographicInterceptor crypto,
       boolean debug) {
     this.debug = debug;
     this.state = state;

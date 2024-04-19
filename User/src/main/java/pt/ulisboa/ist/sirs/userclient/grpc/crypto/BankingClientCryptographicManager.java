@@ -38,6 +38,14 @@ public class BankingClientCryptographicManager extends BankingClientCryptographi
         return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
     }
 
+    public AuthenticateResponse decrypt(AuthenticateResponse object) throws Exception {
+        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
+    }
+
+    public StillAliveRequest encrypt(StillAliveRequest object) throws Exception {
+        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
+    }
+
     public BalanceRequest encrypt(BalanceRequest object) throws Exception {
         return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
     }

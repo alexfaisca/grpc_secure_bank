@@ -6,10 +6,10 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class CryptographicAuthenticationServerInterceptor implements ServerInterceptor {
+public class AuthenticationServerCryptographicInterceptor implements ServerInterceptor {
     List<String> pendingAttributes = new ArrayList<>();
     Map<Class, List<String>> queue = new HashMap<>();
-    private static final Logger logger = Logger.getLogger(CryptographicAuthenticationServerInterceptor.class.getName());
+    private static final Logger logger = Logger.getLogger(AuthenticationServerCryptographicInterceptor.class.getName());
 
     public boolean idQueued(Class requestClass) {
         return !queue.get(requestClass).isEmpty();
@@ -55,7 +55,6 @@ public class CryptographicAuthenticationServerInterceptor implements ServerInter
                     list.add(pendingAttributes.remove(0));
                     queue.put(message.getClass(), list);
                 } else queue.get(message.getClass()).add(pendingAttributes.remove(0));
-                System.out.println(queue.get(message.getClass()));
                 listener.onMessage(message);
             }
         };

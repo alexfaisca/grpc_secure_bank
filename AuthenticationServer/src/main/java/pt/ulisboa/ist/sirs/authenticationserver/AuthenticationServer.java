@@ -2,7 +2,7 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
-import pt.ulisboa.ist.sirs.authenticationserver.grpc.CryptographicAuthenticationServerInterceptor;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationServerCryptographicInterceptor;
 
 import java.io.*;
 import java.util.List;
@@ -19,7 +19,7 @@ public class AuthenticationServer {
 
     final String authenticationServerAddress = args.get(2);
     final int authenticationServerPort = Integer.parseInt(args.get(3));
-    final CryptographicAuthenticationServerInterceptor crypto = new CryptographicAuthenticationServerInterceptor();
+    final AuthenticationServerCryptographicInterceptor crypto = new AuthenticationServerCryptographicInterceptor();
     this.state = new AuthenticationServerState.AuthenticationServerStateBuilder(
         args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug).build();
 
@@ -53,8 +53,7 @@ public class AuthenticationServer {
           + "' server at " + state.getServerAddress() + ".");
     System.out.println("Shutting down.");
     state.delete();
-    if (server.awaitTermination(1, TimeUnit.SECONDS))
-      server.shutdownNow();
+    server.shutdownNow();
   }
 
   private void blockUntilShutDown() throws InterruptedException {

@@ -73,6 +73,15 @@ public abstract class BankingClientCryptographicCore implements Base.Cryptograph
     return true;
   }
 
+  protected static AuthenticateResponse decrypt(AuthenticateResponse message,
+      String secretKeyPath, String ivPath) throws Exception {
+    return AuthenticateResponse.newBuilder().setResponse(
+        ByteString.copyFrom(Utils.serializeJson(
+            Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath),
+                Base.readIv(ivPath)))))
+        .build();
+  }
+
   protected static BalanceResponse decrypt(BalanceResponse message,
       String secretKeyPath, String ivPath) throws Exception {
     return BalanceResponse.newBuilder().setResponse(
@@ -124,6 +133,15 @@ public abstract class BankingClientCryptographicCore implements Base.Cryptograph
         ByteString.copyFrom(Utils.serializeJson(
             Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath),
                 Base.readIv(ivPath)))))
+        .build();
+  }
+
+  protected static StillAliveRequest encrypt(StillAliveRequest message,
+      String secretKeyPath, String privateKeyPath, String ivPath) throws Exception {
+    return StillAliveRequest.newBuilder().setRequest(
+        ByteString.copyFrom(
+            Encrypter.encrypt(message.getRequest().toByteArray(), Base.readSecretKey(secretKeyPath),
+                Base.readPrivateKey(privateKeyPath), Base.readIv(ivPath))))
         .build();
   }
 

@@ -14,14 +14,12 @@ import com.google.protobuf.ByteString;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
 import java.io.*;
-import java.nio.file.Paths;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.nio.file.Files;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -170,15 +168,15 @@ public class UserService {
           Operations.decryptData(
               Base.readSecretKey("resources/crypto/client/symmetricKey"),
               ticketResponse.getResponse().toByteArray(),
-              Base.readIv("resources/crypto/client/iv")));
+              Base.readIv("resources/crypto/client/iv"))
+      );
 
       if (!ticketJson.getString("target").equals("database")
           || !ticketJson.getString("timestampString").equals(timestampString))
         throw new TamperedMessageException();
       // Save session key and session iv
-      Files.write(Paths.get("resources/crypto/session/sessionKey"),
-          Utils.hexToByte(ticketJson.getString("sessionKey")));
-      Files.write(Paths.get("resources/crypto/session/iv"), Utils.hexToByte(ticketJson.getString("sessionIv")));
+      Utils.writeBytesToFile(Utils.hexToByte(ticketJson.getString("sessionKey")),"resources/crypto/session/sessionKey");
+      Utils.writeBytesToFile(Utils.hexToByte(ticketJson.getString("sessionIv")),"resources/crypto/session/iv");
 
       // Needham-Schroeder step 3
       BankServer.AuthenticateResponse authenticateDatabaseResponse = bankingServiceStub
@@ -192,21 +190,15 @@ public class UserService {
               .build());
 
       // Needham-Schroeder steps 4 and 5
-      StillAliveResponse ignored = bankingServiceStub.stillAlive(StillAliveRequest.newBuilder().setRequest(
-          ByteString.copyFrom(
-              Operations.encryptData(
-                  Base.readSecretKey("resources/crypto/session/sessionKey"),
-                  Utils.serializeJson(
-                      Json.createObjectBuilder()
-                          .add(
-                              "nonce",
-                              Utils.deserializeJson(Operations.decryptData(
-                                  Base.readSecretKey("resources/crypto/session/sessionKey"),
-                                  authenticateDatabaseResponse.getResponse().toByteArray(),
-                                  Base.readIv("resources/crypto/session/iv"))).getInt("nonce") - 1)
-                          .build()),
-                  Base.readIv("resources/crypto/session/iv"))))
-          .build());
+      StillAliveResponse ignored = bankingServiceStub.stillAlive(crypto.encrypt(StillAliveRequest.newBuilder().setRequest(
+        ByteString.copyFrom(
+          Utils.serializeJson(Json.createObjectBuilder()
+            .add(
+              "nonce", Utils.deserializeJson(crypto.decrypt(authenticateDatabaseResponse).getResponse().toByteArray()).getInt("nonce") - 1
+            ).add(
+              "publicKey", Utils.byteToHex(Utils.readBytesFromFile("resources/crypto/publicKey"))
+            ).build()
+        ))).build()));
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
     } catch (Exception e) {

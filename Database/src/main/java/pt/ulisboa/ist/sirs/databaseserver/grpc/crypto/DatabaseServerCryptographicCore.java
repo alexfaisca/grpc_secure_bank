@@ -72,6 +72,15 @@ public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
     return true;
   }
 
+  protected static StillAliveRequest decrypt(StillAliveRequest message,
+      String secretKeyPath, String ivPath) throws Exception {
+    return StillAliveRequest.newBuilder().setRequest(
+        ByteString.copyFrom(Utils.serializeJson(
+            Decrypter.decrypt(message.getRequest().toByteArray(), Base.readSecretKey(secretKeyPath),
+                Base.readIv(ivPath)))))
+        .build();
+  }
+
   protected static BalanceRequest decrypt(BalanceRequest message,
       String secretKeyPath, String ivPath) throws Exception {
     return BalanceRequest.newBuilder().setRequest(
@@ -123,6 +132,24 @@ public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
         ByteString.copyFrom(Utils.serializeJson(
             Decrypter.decrypt(message.getRequest().toByteArray(), Base.readSecretKey(secretKeyPath),
                 Base.readIv(ivPath)))))
+        .build();
+  }
+
+  protected static AuthenticateResponse encrypt(AuthenticateResponse message,
+      String secretKeyPath, String privateKeyPath, String ivPath) throws Exception {
+    return AuthenticateResponse.newBuilder().setResponse(
+        ByteString.copyFrom(
+            Encrypter.encrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath),
+                Base.readPrivateKey(privateKeyPath), Base.readIv(ivPath))))
+        .build();
+  }
+
+  protected static StillAliveResponse encrypt(StillAliveResponse message,
+      String secretKeyPath, String privateKeyPath, String ivPath) throws Exception {
+    return StillAliveResponse.newBuilder().setResponse(
+        ByteString.copyFrom(
+            Encrypter.encrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath),
+                Base.readPrivateKey(privateKeyPath), Base.readIv(ivPath))))
         .build();
   }
 
