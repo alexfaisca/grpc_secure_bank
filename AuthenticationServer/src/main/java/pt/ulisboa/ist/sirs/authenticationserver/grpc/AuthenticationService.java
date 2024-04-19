@@ -1,13 +1,13 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
 
 import javax.json.Json;
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -26,14 +26,17 @@ public class AuthenticationService {
     private final Integer port;
     private final String service;
     private final String name;
+    private final AuthenticationServerCryptographicManager crypto;
 
     public AuthenticationServerServiceBuilder(
-        String service,
-        String qualifier,
-        String address,
-        Integer port,
-        boolean debug) {
+      AuthenticationServerCryptographicManager crypto,
+      String service,
+      String qualifier,
+      String address,
+      Integer port,
+      boolean debug) {
       this.debug = debug;
+      this.crypto = crypto;
       this.address = address;
       this.port = port;
       this.service = service;
@@ -50,6 +53,7 @@ public class AuthenticationService {
   private final Integer port;
   private final String service;
   private final String name;
+  private final AuthenticationServerCryptographicManager crypto;
   private final Map<String, List<OffsetDateTime>> timestamps = new HashMap<>();
 
   public AuthenticationService(AuthenticationServerServiceBuilder builder) {
@@ -58,6 +62,7 @@ public class AuthenticationService {
     this.name = builder.name;
     this.address = builder.address;
     this.port = builder.port;
+    this.crypto = builder.crypto;
   }
 
   public String getServerName() {
@@ -98,9 +103,9 @@ public class AuthenticationService {
     addTimestamp(client, timestamp);
   }
 
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] alicePubKeyEnc, String client)
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] alicePubKeyEnc)
       throws Exception {
-
+    String client = crypto.getDHClientHash();
     KeyFactory serverKeyFac = KeyFactory.getInstance("DH");
     X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(alicePubKeyEnc);
 
@@ -144,18 +149,16 @@ public class AuthenticationService {
             ((temp[3] & 0xFF));
     byte[] iv = Operations.generateIV(number, aesKey.getEncoded(),
         Utils.byteToHex(sharedSecret));
-    File clientDirectory = new File("resources/crypto/" + client + "/");
-    if (!clientDirectory.exists())
-        if (!clientDirectory.mkdirs())
-          throw new RuntimeException("Could not store client key");
 
-    Utils.writeBytesToFile(aesKey.getEncoded(), "resources/crypto/" + client + "/symmetricKey");
-    Utils.writeBytesToFile(iv, "resources/crypto/" + client + "/iv");
+    // Cache client crypto data
+    crypto.initializeClientCache(client);
+    Utils.writeBytesToFile(aesKey.getEncoded(), crypto.buildSymmetricKeyPath(client));
+    Utils.writeBytesToFile(iv, crypto.buildIVPath(client));
 
     return new DiffieHellmanExchangeParameters(serverPubKeyEnc, encodedParams);
   }
 
-  public synchronized byte[] authenticate(String source, String target, String client, OffsetDateTime timestamp)
+  public synchronized byte[] authenticate(String source, String target, OffsetDateTime timestamp)
       throws Exception {
     if (isDebug())
       System.out.printf("\t\t\tAuthenticationService: authenticating %s for %s\n", target, source);
@@ -180,24 +183,22 @@ public class AuthenticationService {
     if (isDebug())
       System.out.println("\t\t\tAuthenticationService: serializing ticket");
 
-    return Operations.encryptData(
-        Base.readSecretKey("resources/crypto/" + client + "/symmetricKey"),
-        Utils.serializeJson(
-            Json.createObjectBuilder()
-                .add("target", target)
-                .add("timestampString", timestamp.toString())
-                .add("sessionKey", sessionKeyHex)
-                .add("sessionIv", sessionIvHex)
-                .add("targetTicket", Utils.byteToHex(
-                    Operations.encryptData(
-                        Base.readSecretKey("resources/crypto/database/symmetricKey"),
-                        Utils.serializeJson(
-                            Json.createObjectBuilder()
-                            .add("source", source)
-                            .add("sessionKey", sessionKeyHex).add("sessionIv", sessionIvHex).build()),
-                        Base.readIv("resources/crypto/database/iv"))))
-                .build()),
-        Base.readIv("resources/crypto/" + client + "/iv"));
+    return Utils.serializeJson(
+      Json.createObjectBuilder()
+        .add("target", target)
+        .add("timestampString", timestamp.toString())
+        .add("sessionKey", sessionKeyHex)
+        .add("sessionIv", sessionIvHex)
+        .add("targetTicket", Utils.byteToHex(
+          Operations.encryptData(
+            Base.readSecretKey(crypto.getDatabaseSymmetricKeyPath("")),
+            Utils.serializeJson(
+              Json.createObjectBuilder()
+              .add("source", source)
+              .add("sessionKey", sessionKeyHex).add("sessionIv", sessionIvHex).build()
+            ),
+            Base.readIv(crypto.getDatabaseIVPath("")))))
+        .build());
   }
 
   public void register() {

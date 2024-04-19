@@ -1,7 +1,6 @@
 package pt.ulisboa.ist.sirs.databaseserver;
 
-import pt.ulisboa.ist.sirs.cryptology.Operations;
-import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseServerCryptographicInterceptor;
+import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseService;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.repository.DatabaseManager;

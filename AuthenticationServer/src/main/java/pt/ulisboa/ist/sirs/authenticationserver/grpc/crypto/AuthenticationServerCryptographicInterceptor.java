@@ -1,4 +1,4 @@
-package pt.ulisboa.ist.sirs.databaseserver.grpc;
+package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.utils.Utils;
@@ -6,21 +6,21 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class DatabaseServerCryptographicInterceptor implements ServerInterceptor {
+public class AuthenticationServerCryptographicInterceptor implements ServerInterceptor {
     List<String> pendingAttributes = new ArrayList<>();
     Map<Class, List<String>> queue = new HashMap<>();
-    private static final Logger logger = Logger.getLogger(DatabaseServerCryptographicInterceptor.class.getName());
+    private static final Logger logger = Logger.getLogger(AuthenticationServerCryptographicInterceptor.class.getName());
 
-    public boolean isQueued(Class requestClass) {
+    public boolean idQueued(Class requestClass) {
         return !queue.get(requestClass).isEmpty();
-    }
-
-    public String popFromQueue(Class requestClass) {
-        return queue.get(requestClass).remove(0);
     }
 
     public String getFromQueue(Class requestClass) {
         return queue.get(requestClass).get(0);
+    }
+
+    public String popFromQueue(Class requestClass) {
+        return queue.get(requestClass).remove(0);
     }
 
     @Override

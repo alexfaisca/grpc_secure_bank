@@ -3,7 +3,6 @@ package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.io.File;

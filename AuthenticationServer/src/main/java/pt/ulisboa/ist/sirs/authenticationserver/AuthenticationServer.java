@@ -2,12 +2,12 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
-import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationServerCryptographicInterceptor;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicInterceptor;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 
 import java.io.*;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 public class AuthenticationServer {
   private final boolean debug;
@@ -19,16 +19,17 @@ public class AuthenticationServer {
 
     final String authenticationServerAddress = args.get(2);
     final int authenticationServerPort = Integer.parseInt(args.get(3));
-    final AuthenticationServerCryptographicInterceptor crypto = new AuthenticationServerCryptographicInterceptor();
+    final AuthenticationServerCryptographicInterceptor interceptor = new AuthenticationServerCryptographicInterceptor();
+    final AuthenticationServerCryptographicManager crypto = new AuthenticationServerCryptographicManager(interceptor);
     this.state = new AuthenticationServerState.AuthenticationServerStateBuilder(
-        args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug).build();
+        crypto, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug).build();
 
     final BindableService AuthenticationServerService = new AuthenticationServerImpl(state, crypto, debug);
 
     TlsServerCredentials.Builder tlsBuilder = TlsServerCredentials.newBuilder()
         .keyManager(new File(args.get(4)), new File(args.get(5)));
     this.server = Grpc.newServerBuilderForPort(authenticationServerPort, tlsBuilder.build())
-        .addService(ServerInterceptors.intercept(AuthenticationServerService, crypto))
+        .addService(ServerInterceptors.intercept(AuthenticationServerService, interceptor))
         .build();
   }
 

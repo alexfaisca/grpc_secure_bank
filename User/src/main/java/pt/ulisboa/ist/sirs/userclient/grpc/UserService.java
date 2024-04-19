@@ -160,13 +160,16 @@ public class UserService {
     try {
       // Needham-Schroeder step 1
       AuthenticationServer.AuthenticateResponse ticketResponse = authenticationServerServiceStub.authenticate(
-          AuthenticationServer.AuthenticateRequest.newBuilder().setRequest(
-              ByteString.copyFrom(
-                  Utils.serializeJson(
-                      Utils.createJson(
-                          List.of("source", "target", "timestampString"),
-                          List.of("user", "database", timestampString)))))
-              .build());
+        AuthenticationServer.AuthenticateRequest.newBuilder().setRequest(
+          ByteString.copyFrom(
+            Operations.encryptData(
+              Base.readSecretKey("resources/crypto/client/symmetricKey"),
+              Utils.serializeJson(
+                Utils.createJson(
+                  List.of("source", "target", "timestampString"),
+                  List.of("user", "database", timestampString))),
+              Utils.readBytesFromFile("resources/crypto/client/iv")
+        ))).build());
 
       // Needham-Schroeder step 2
       JsonObject ticketJson = Utils.deserializeJson(

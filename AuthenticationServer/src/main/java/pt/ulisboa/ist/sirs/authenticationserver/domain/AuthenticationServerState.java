@@ -2,6 +2,7 @@ package pt.ulisboa.ist.sirs.authenticationserver.domain;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationService;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 
 import java.time.OffsetDateTime;
 
@@ -12,18 +13,20 @@ public class AuthenticationServerState {
     private final AuthenticationService service;
 
     public AuthenticationServerStateBuilder(
-        String serverService,
-        String serverName,
-        String host,
-        Integer port,
-        boolean debug) {
+      AuthenticationServerCryptographicManager crypto,
+      String serverService,
+      String serverName,
+      String host,
+      Integer port,
+      boolean debug) {
       this.debug = debug;
       this.service = new AuthenticationService.AuthenticationServerServiceBuilder(
-          serverService,
-          serverName,
-          host,
-          port,
-          debug).build();
+        crypto,
+        serverService,
+        serverName,
+        host,
+        port,
+        debug).build();
     }
 
     public AuthenticationServerState build() {
@@ -65,7 +68,7 @@ public class AuthenticationServerState {
       System.out.printf("\t\tAuthenticationServerState: diffieHellman initiate\n");
     try {
       service.checkForReplayAttack(client, timestamp);
-      return service.diffieHellmanExchange(pubKeyEnc, client);
+      return service.diffieHellmanExchange(pubKeyEnc);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -76,7 +79,7 @@ public class AuthenticationServerState {
       System.out.printf("\t\tAuthenticationServerState: authenticating %s for %s\n", target, source);
     try {
       service.checkForReplayAttack(client, timestamp);
-      return service.authenticate(source, target, client, timestamp);
+      return service.authenticate(source, target, timestamp);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
