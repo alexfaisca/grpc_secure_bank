@@ -4,6 +4,7 @@ package pt.ulisboa.ist.sirs.contract.authenticationserver;
 
 message DiffieHellmanExchangeRequest {
     bytes clientPublic = 1;
+    string timestamp = 2;
 }
 
 message DiffieHellmanExchangeResponse {

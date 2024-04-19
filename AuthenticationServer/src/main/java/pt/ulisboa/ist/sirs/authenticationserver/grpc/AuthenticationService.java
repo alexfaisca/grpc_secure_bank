@@ -1,7 +1,6 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
-import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.utils.Utils;
@@ -20,7 +19,6 @@ import javax.crypto.spec.*;
 import javax.crypto.interfaces.*;
 
 public class AuthenticationService {
-
   public static class AuthenticationServerServiceBuilder {
 
     private final boolean debug;
@@ -52,7 +50,7 @@ public class AuthenticationService {
   private final Integer port;
   private final String service;
   private final String name;
-  private final List<OffsetDateTime> timestamps = new ArrayList<>();
+  private final Map<String, List<OffsetDateTime>> timestamps = new HashMap<>();
 
   public AuthenticationService(AuthenticationServerServiceBuilder builder) {
     this.debug = builder.debug;
@@ -82,16 +80,22 @@ public class AuthenticationService {
     return this.debug;
   }
 
-  public List<OffsetDateTime> getTimestamps() {
-    return this.timestamps;
+  private void addTimestamp(String client, OffsetDateTime timestamp) {
+    this.timestamps.get(client).add(timestamp);
   }
 
-  public void addTimestamp(OffsetDateTime timestamp) {
-    this.timestamps.add(timestamp);
+  private boolean oldTimestampString(String client, OffsetDateTime timestamp) {
+    if (this.timestamps.get(client) == null) {
+      this.timestamps.put(client, new ArrayList<>());
+      return false;
+    }
+    return this.timestamps.get(client).contains(timestamp);
   }
 
-  public boolean oldTimestampString(OffsetDateTime timestamp) {
-    return getTimestamps().contains(timestamp);
+  public synchronized void checkForReplayAttack(String client, OffsetDateTime timestamp) {
+    if (oldTimestampString(client, timestamp))
+      throw new ReplayAttackException();
+    addTimestamp(client, timestamp);
   }
 
   public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] alicePubKeyEnc, String client)
@@ -141,7 +145,9 @@ public class AuthenticationService {
     byte[] iv = Operations.generateIV(number, aesKey.getEncoded(),
         Utils.byteToHex(sharedSecret));
     File clientDirectory = new File("resources/crypto/" + client + "/");
-    if (!clientDirectory.exists()) clientDirectory.mkdirs();
+    if (!clientDirectory.exists())
+        if (!clientDirectory.mkdirs())
+          throw new RuntimeException("Could not store client key");
 
     Utils.writeBytesToFile(aesKey.getEncoded(), "resources/crypto/" + client + "/symmetricKey");
     Utils.writeBytesToFile(iv, "resources/crypto/" + client + "/iv");
@@ -155,10 +161,6 @@ public class AuthenticationService {
       System.out.printf("\t\t\tAuthenticationService: authenticating %s for %s\n", target, source);
     if (isDebug())
       System.out.printf("\t\t\tAuthenticationService: validating timestamp %s\n", timestamp.toString());
-
-    if (oldTimestampString(timestamp))
-      throw new ReplayAttackException();
-    addTimestamp(timestamp);
 
     if (isDebug())
       System.out.println("\t\t\tAuthenticationService: generating session key");

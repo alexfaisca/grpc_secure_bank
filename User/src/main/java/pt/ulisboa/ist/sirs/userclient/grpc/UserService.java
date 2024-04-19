@@ -1,7 +1,6 @@
 package pt.ulisboa.ist.sirs.userclient.grpc;
 
 import io.grpc.*;
-import org.apache.commons.lang3.ArrayUtils;
 import pt.ulisboa.ist.sirs.contract.bankserver.BankServer;
 import pt.ulisboa.ist.sirs.contract.bankserver.BankingServiceGrpc;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
@@ -17,7 +16,6 @@ import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 import java.io.*;
 import java.nio.file.Paths;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -27,7 +25,6 @@ import java.nio.file.Files;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -119,7 +116,8 @@ public class UserService {
               AuthenticationServer.DiffieHellmanExchangeRequest.newBuilder().setClientPublic(
                       ByteString.copyFrom(
                               keyPair.getPublic().getEncoded()
-                      )).build());
+                      )).setTimestamp(OffsetDateTime.now().toString()
+              ).build());
 
       /*
        * Client uses server's public key for the first (and only) phase

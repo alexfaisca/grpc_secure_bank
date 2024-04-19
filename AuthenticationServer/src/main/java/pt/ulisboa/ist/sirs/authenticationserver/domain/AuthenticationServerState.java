@@ -2,7 +2,6 @@ package pt.ulisboa.ist.sirs.authenticationserver.domain;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationService;
-import pt.ulisboa.ist.sirs.authenticationserver.grpc.CryptographicAuthenticationServerInterceptor;
 
 import java.time.OffsetDateTime;
 
@@ -61,10 +60,11 @@ public class AuthenticationServerState {
     return debug;
   }
 
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc, String client) {
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc, String client, OffsetDateTime timestamp) {
     if (isDebug())
       System.out.printf("\t\tAuthenticationServerState: diffieHellman initiate\n");
     try {
+      service.checkForReplayAttack(client, timestamp);
       return service.diffieHellmanExchange(pubKeyEnc, client);
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -75,6 +75,7 @@ public class AuthenticationServerState {
     if (isDebug())
       System.out.printf("\t\tAuthenticationServerState: authenticating %s for %s\n", target, source);
     try {
+      service.checkForReplayAttack(client, timestamp);
       return service.authenticate(source, target, client, timestamp);
     } catch (Exception e) {
       throw new RuntimeException(e);

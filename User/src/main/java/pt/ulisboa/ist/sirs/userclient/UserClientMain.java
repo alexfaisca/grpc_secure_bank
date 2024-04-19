@@ -31,7 +31,7 @@ public class UserClientMain {
                 """
             );
 
-        final boolean debug = true;
+        final boolean debug = System.getProperty("debug") != null;
 
         System.out.println(UserClientMain.class.getSimpleName());
         UserService userService = new UserService.UserServiceBuilder(

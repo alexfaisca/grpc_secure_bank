@@ -34,7 +34,7 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
     try {
       String client = crypto.popFromQueue(DiffieHellmanExchangeRequest.class);
       DiffieHellmanExchangeParameters params = state.diffieHellmanExchange(request.getClientPublic().toByteArray(),
-          client);
+          client, OffsetDateTime.parse(request.getTimestamp()));
 
       responseObserver.onNext(DiffieHellmanExchangeResponse.newBuilder()
           .setServerPublic(ByteString.copyFrom(params.publicKey()))
@@ -42,8 +42,6 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
           .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      e.printStackTrace();
-      System.out.println(e.getMessage());
       responseObserver.onError(e);
     }
   }
