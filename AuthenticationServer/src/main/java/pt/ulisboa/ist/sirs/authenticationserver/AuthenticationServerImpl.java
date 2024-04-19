@@ -2,10 +2,11 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
-import io.grpc.ServerCall;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc.AuthenticationServerServiceImplBase;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
+import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.CryptographicAuthenticationServerInterceptor;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.json.*;
@@ -14,10 +15,13 @@ import java.time.OffsetDateTime;
 public final class AuthenticationServerImpl extends AuthenticationServerServiceImplBase {
   private final boolean debug;
   private final AuthenticationServerState state;
+  private final CryptographicAuthenticationServerInterceptor crypto;
 
-  public AuthenticationServerImpl(AuthenticationServerState state, boolean debug) {
+  public AuthenticationServerImpl(AuthenticationServerState state, CryptographicAuthenticationServerInterceptor crypto,
+      boolean debug) {
     this.debug = debug;
     this.state = state;
+    this.crypto = crypto;
   }
 
   private boolean isDebug() {
@@ -25,7 +29,23 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
   }
 
   @Override
-  public void diffieHellmanExchange(DiffieHellmanExchangeRequest request, StreamObserver<DiffieHellmanExchangeResponse> responseObserver) {
+  public void diffieHellmanExchange(DiffieHellmanExchangeRequest request,
+      StreamObserver<DiffieHellmanExchangeResponse> responseObserver) {
+    try {
+      String client = crypto.popFromQueue(DiffieHellmanExchangeRequest.class);
+      DiffieHellmanExchangeParameters params = state.diffieHellmanExchange(request.getClientPublic().toByteArray(),
+          client);
+
+      responseObserver.onNext(DiffieHellmanExchangeResponse.newBuilder()
+          .setServerPublic(ByteString.copyFrom(params.publicKey()))
+          .setParameters(ByteString.copyFrom(params.parameters()))
+          .build());
+      responseObserver.onCompleted();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println(e.getMessage());
+      responseObserver.onError(e);
+    }
   }
 
   @Override
@@ -40,7 +60,7 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
 
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: delegate");
-      byte[] ticket = state.authenticate(source, target, timestamp);
+      byte[] ticket = state.authenticate(source, target, crypto.popFromQueue(AuthenticateRequest.class), timestamp);
 
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: serialize and send response");

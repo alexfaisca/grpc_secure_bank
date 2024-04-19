@@ -21,9 +21,9 @@ public class AuthenticationServer {
     final int authenticationServerPort = Integer.parseInt(args.get(3));
     final CryptographicAuthenticationServerInterceptor crypto = new CryptographicAuthenticationServerInterceptor();
     this.state = new AuthenticationServerState.AuthenticationServerStateBuilder(
-        args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, crypto, debug).build();
+        args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug).build();
 
-    final BindableService AuthenticationServerService = new AuthenticationServerImpl(state, debug);
+    final BindableService AuthenticationServerService = new AuthenticationServerImpl(state, crypto, debug);
 
     TlsServerCredentials.Builder tlsBuilder = TlsServerCredentials.newBuilder()
         .keyManager(new File(args.get(4)), new File(args.get(5)));

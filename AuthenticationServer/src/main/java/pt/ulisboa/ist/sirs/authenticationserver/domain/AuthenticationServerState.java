@@ -17,7 +17,6 @@ public class AuthenticationServerState {
         String serverName,
         String host,
         Integer port,
-        CryptographicAuthenticationServerInterceptor crypto,
         boolean debug) {
       this.debug = debug;
       this.service = new AuthenticationService.AuthenticationServerServiceBuilder(
@@ -25,7 +24,6 @@ public class AuthenticationServerState {
           serverName,
           host,
           port,
-          crypto,
           debug).build();
     }
 
@@ -63,21 +61,21 @@ public class AuthenticationServerState {
     return debug;
   }
 
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc) {
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc, String client) {
     if (isDebug())
       System.out.printf("\t\tAuthenticationServerState: diffieHellman initiate\n");
     try {
-      return service.diffieHellmanExchange(pubKeyEnc);
+      return service.diffieHellmanExchange(pubKeyEnc, client);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public synchronized byte[] authenticate(String source, String target, OffsetDateTime timestamp) {
+  public synchronized byte[] authenticate(String source, String target, String client, OffsetDateTime timestamp) {
     if (isDebug())
       System.out.printf("\t\tAuthenticationServerState: authenticating %s for %s\n", target, source);
     try {
-      return service.authenticate(source, target, timestamp);
+      return service.authenticate(source, target, client, timestamp);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

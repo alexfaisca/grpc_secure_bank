@@ -1,10 +1,8 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc;
 
 import io.grpc.*;
-import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
-import java.net.SocketAddress;
 import java.util.*;
 import java.util.logging.Logger;
 

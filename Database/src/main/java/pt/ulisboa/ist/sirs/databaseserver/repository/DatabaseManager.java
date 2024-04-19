@@ -71,7 +71,7 @@ public final class DatabaseManager {
       @Override
       public void doInTransaction() {
         databaseOperator.registerOperation(DatabaseOperations.RequestType.DELETE_ACCOUNT, timestamp);
-        if (!databaseOperator.checkPassword(username, password))
+        if (databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
         databaseOperator.deleteAccount(username);
       }
@@ -83,7 +83,7 @@ public final class DatabaseManager {
       @Override
       public void doInTransaction() {
         databaseOperator.registerOperation(DatabaseOperations.RequestType.BALANCE, timestamp);
-        if (!databaseOperator.checkPassword(username, password))
+        if (databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
         setTransactionYield(databaseOperator.balance(username));
       }
@@ -95,7 +95,7 @@ public final class DatabaseManager {
       @Override
       public void doInTransaction() {
         databaseOperator.registerOperation(DatabaseOperations.RequestType.GET_MOVEMENTS, timestamp);
-        if (!databaseOperator.checkPassword(username, password))
+        if (databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
         setTransactionYield(databaseOperator.getMovements(username));
       }
@@ -109,7 +109,7 @@ public final class DatabaseManager {
       @Override
       public void doInTransaction() {
         databaseOperator.registerOperation(DatabaseOperations.RequestType.ADD_EXPENSE, timestamp);
-        if (!databaseOperator.checkPassword(username, password))
+        if (databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
         databaseOperator.addExpense(username, date, amount, description);
       }
@@ -122,7 +122,7 @@ public final class DatabaseManager {
       @Override
       public void doInTransaction() {
         databaseOperator.registerOperation(DatabaseOperations.RequestType.ORDER_PAYMENT, timestamp);
-        if (!databaseOperator.checkPassword(username, password))
+        if (databaseOperator.checkPassword(username, password))
           throw new WrongPasswordException();
         databaseOperator.orderPayment(username, date, amount, description, recipient);
       }
