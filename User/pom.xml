@@ -66,10 +66,6 @@
 		    <server-port>${arg.server-port}</server-port>
 		    <authentication-server-address>${arg.authentication-server-address}</authentication-server-address>
 		    <authentication-server-port>${arg.authentication-server-port}</authentication-server-port>
-		    <path-iv>${arg.path-iv}</path-iv>
-		    <path-secret-key>${arg.path-secret-key}</path-secret-key>
-		    <path-public-key>${arg.path-public-key}</path-public-key>
-	  		<path-private-key>${arg.path-private-key}</path-private-key>
 			<path-server-cert>${arg.path-user-trust-chain}</path-server-cert>
 		  </environmentVariables>
 		</configuration>

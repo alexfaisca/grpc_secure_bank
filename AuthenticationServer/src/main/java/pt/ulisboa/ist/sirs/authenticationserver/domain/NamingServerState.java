@@ -7,10 +7,41 @@ import java.util.stream.Collectors;
 
 import com.google.api.Advice;
 import com.google.protobuf.Service;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationService;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.NamingService;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.NamingServerCryptographicManager;
 
 import java.util.*;
 
 public class NamingServerState {
+
+  public static class NamingServerStateBuilder {
+    private final boolean debug;
+    private final NamingService service;
+
+    public NamingServerStateBuilder(
+            NamingServerCryptographicManager crypto,
+            String serverService,
+            String serverName,
+            String host,
+            Integer port,
+            boolean debug) {
+      this.debug = debug;
+      this.service = new NamingService.NamingServerServiceBuilder(
+              crypto,
+              serverService,
+              serverName,
+              host,
+              port,
+              debug).build();
+    }
+
+    public NamingServerState build() {
+      return new NamingServerState(this);
+    }
+
+  }
   public final class ServerEntry {
     private final String address;
     private final Integer port;
@@ -36,19 +67,15 @@ public class NamingServerState {
   }
 
   private boolean debug;
-
+  private final NamingService namingService;
   Map<Types, Map<String, ServerEntry>> services;
 
-  public NamingServerState() {
-    this.debug = false;
+  public NamingServerState(NamingServerStateBuilder builder) {
+    this.debug = builder.debug;
+    this.namingService = builder.service;
     services = new HashMap<>();
     services.put(Types.BankServer, new HashMap<>());
     services.put(Types.DatabaseServer, new HashMap<>());
-  }
-
-  public NamingServerState(boolean debug) {
-    this();
-    this.debug = debug;
   }
 
   public boolean isDebug() {

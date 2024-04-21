@@ -32,7 +32,6 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
   public void diffieHellmanExchange(DiffieHellmanExchangeRequest request,
       StreamObserver<DiffieHellmanExchangeResponse> responseObserver) {
     try {
-      String client = crypto.getDHClientHash();
       request = crypto.decrypt(request);
 
       DiffieHellmanExchangeParameters params = state.diffieHellmanExchange(

@@ -1,5 +1,7 @@
 package pt.ulisboa.ist.sirs.cryptology;
 
+import pt.ulisboa.ist.sirs.utils.Utils;
+
 import java.security.*;
 import java.util.Arrays;
 
@@ -26,8 +28,8 @@ public final class Security {
       throws NoSuchPaddingException, SignatureException, NoSuchAlgorithmException, InvalidKeyException,
       IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
     byte[] protectedDocument = Operations.decryptData(secretKey, cryptogram, iv);
-    byte[] signature = Arrays.copyOfRange(protectedDocument, 0, 256);
-    byte[] message = Arrays.copyOfRange(protectedDocument, 256, protectedDocument.length);
+    byte[] signature = Arrays.copyOfRange(protectedDocument, 0, 512);
+    byte[] message = Arrays.copyOfRange(protectedDocument, 512, protectedDocument.length);
 
     return Operations.messageValidation(publicKey, message, signature);
   }
@@ -36,7 +38,7 @@ public final class Security {
       throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
       InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
     byte[] protectedDocument = Operations.decryptData(secretKey, cryptogram, iv);
-    byte[] message = Arrays.copyOfRange(protectedDocument, 256, protectedDocument.length);
+    byte[] message = Arrays.copyOfRange(protectedDocument, 512, protectedDocument.length);
     byte[] document = new byte[message.length];
     System.arraycopy(message, 0, document, 0, message.length);
     return document;

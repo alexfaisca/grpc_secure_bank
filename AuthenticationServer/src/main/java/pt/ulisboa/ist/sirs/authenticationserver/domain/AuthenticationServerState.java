@@ -12,9 +12,11 @@ public class AuthenticationServerState {
   public static class AuthenticationServerStateBuilder {
     private final boolean debug;
     private final AuthenticationService service;
+    private final NamingServerState namingServerState;
 
     public AuthenticationServerStateBuilder(
       AuthenticationServerCryptographicManager crypto,
+      NamingServerState namingServerState,
       String serverService,
       String serverName,
       String host,
@@ -28,6 +30,7 @@ public class AuthenticationServerState {
         host,
         port,
         debug).build();
+      this.namingServerState = namingServerState;
     }
 
     public AuthenticationServerState build() {
@@ -38,10 +41,12 @@ public class AuthenticationServerState {
 
   private final boolean debug;
   private final AuthenticationService service;
+  private final NamingServerState namingServerState;
 
   private AuthenticationServerState(AuthenticationServerStateBuilder builder) {
     this.debug = builder.debug;
     this.service = builder.service;
+    this.namingServerState = builder.namingServerState;
   }
 
   public String getAuthenticationServerService() {

@@ -85,7 +85,7 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
           Utils.serializeJson(
             Json.createObjectBuilder()
               .add("nonce", crypto.getNonce())
-              .add("publicKey", Utils.byteToHex(Base.readPublicKey("resources/crypto/publicKey").getEncoded()))
+              .add("publicKey", Utils.byteToHex(Base.readPublicKey(Base.CryptographicCore.getPublicKeyPath()).getEncoded()))
               .build())
         )).build()));
       responseObserver.onCompleted();

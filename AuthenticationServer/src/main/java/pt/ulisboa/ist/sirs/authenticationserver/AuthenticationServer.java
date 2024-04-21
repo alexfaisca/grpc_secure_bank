@@ -2,16 +2,31 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
+import pt.ulisboa.ist.sirs.authenticationserver.domain.NamingServerState;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.NamingServerCryptographicManager;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.ServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.io.*;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.security.cert.CertificateFactory;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 public class AuthenticationServer {
   private final boolean debug;
   private final AuthenticationServerState state;
+  private final NamingServerState namingState;
   private final Server server;
 
   public AuthenticationServer(List<String> args, boolean debug) throws IOException {
@@ -21,15 +36,21 @@ public class AuthenticationServer {
     final int authenticationServerPort = Integer.parseInt(args.get(3));
     final ServerCryptographicInterceptor interceptor = new ServerCryptographicInterceptor();
     final AuthenticationServerCryptographicManager crypto = new AuthenticationServerCryptographicManager(interceptor);
+    final NamingServerCryptographicManager namingCrypto = new NamingServerCryptographicManager(interceptor);
+    this.namingState = new NamingServerState.NamingServerStateBuilder(
+      namingCrypto, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug
+    ).build();
     this.state = new AuthenticationServerState.AuthenticationServerStateBuilder(
-        crypto, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug).build();
+      crypto, namingState, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug
+    ).build();
 
     final BindableService AuthenticationServerService = new AuthenticationServerImpl(state, crypto, debug);
+    final BindableService NamingServerService = new NamingServerImpl(namingState, namingCrypto, debug);
 
-    TlsServerCredentials.Builder tlsBuilder = TlsServerCredentials.newBuilder()
-        .keyManager(new File(args.get(4)), new File(args.get(5)));
-    this.server = Grpc.newServerBuilderForPort(authenticationServerPort, tlsBuilder.build())
+    ServerCredentials tlsBuilder = TlsServerCredentials.create(new File(args.get(4)), new File(args.get(5)));
+    this.server = Grpc.newServerBuilderForPort(authenticationServerPort, tlsBuilder)
         .addService(ServerInterceptors.intercept(AuthenticationServerService, interceptor))
+        .addService(ServerInterceptors.intercept(NamingServerService, interceptor))
         .build();
   }
 
@@ -87,7 +108,15 @@ public class AuthenticationServer {
               ...
           """);
 
-    try {
+    try (FileInputStream certFile = new FileInputStream(System.getenv("path-server-cert"))) {
+      CertificateFactory certGen = CertificateFactory.getInstance("X.509");
+      X509Certificate cert = (X509Certificate) certGen.generateCertificate(certFile);
+      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Utils.readBytesFromPemFile(System.getenv("path-server-key")));
+      Base.CryptographicCore.initializeSelfDirectory();
+      Utils.writeBytesToFile(cert.getPublicKey().getEncoded(), Base.CryptographicCore.getPublicKeyPath());
+      Utils.writeBytesToFile(keyFactory.generatePrivate(keySpec).getEncoded(), Base.CryptographicCore.getPrivateKeyPath());
+
       AuthenticationServer server = new AuthenticationServer(
           List.of(
               System.getenv("service-name"),
@@ -97,6 +126,8 @@ public class AuthenticationServer {
               System.getenv("path-server-cert"),
               System.getenv("path-server-key")),
           debug);
+
+
       server.serverStartup();
       server.blockUntilShutDown();
     } catch (IOException | InterruptedException e) {

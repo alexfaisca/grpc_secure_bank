@@ -1,5 +1,6 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
+import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer.*;
 
 import java.io.File;
@@ -11,28 +12,23 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
         this.crypto = crypto;
     }
 
-    // For now database symmetricKey and iv are distributed prior to application initialization, hence are static files
-    public String getDatabaseSymmetricKeyPath(String database) {
-        return "resources/crypto/database/symmetricKey";
-    }
-
-    public String getDatabaseIVPath(String database) {
-        return "resources/crypto/database/iv";
-    }
-
     public void initializeClientCache(String client) {
-        File clientDirectory = new File("resources/crypto/" + client + "/");
+        File clientDirectory = new File("resources/crypto/server/" + client + "/");
         if (!clientDirectory.exists())
             if (!clientDirectory.mkdirs())
                 throw new RuntimeException("Could not store client key");
     }
 
     public String buildSymmetricKeyPath(String client) {
-        return "resources/crypto/" + client + "/symmetricKey";
+        return "resources/crypto/server/" + client + "/symmetricKey";
     }
 
     public String buildIVPath(String client) {
-        return "resources/crypto/" + client + "/iv";
+        return "resources/crypto/server/" + client + "/iv";
+    }
+
+    public String getDHClientHash() {
+        return crypto.getFromQueue(AuthenticationServer.DiffieHellmanExchangeRequest.class);
     }
 
     public <P> P encrypt(P object) throws Exception {

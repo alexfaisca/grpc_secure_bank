@@ -4,13 +4,11 @@ package pt.ulisboa.ist.sirs.contract.authenticationserver;
 
 message DiffieHellmanExchangeRequest {
     bytes clientPublic = 1;
-    int32 random = 2;
 }
 
 message DiffieHellmanExchangeResponse {
     bytes serverPublic = 1;
     bytes parameters = 2;
-    int32 random = 3;
 }
 
 message AuthenticateRequest {

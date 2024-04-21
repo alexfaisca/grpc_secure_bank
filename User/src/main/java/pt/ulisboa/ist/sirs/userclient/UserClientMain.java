@@ -32,7 +32,8 @@ public class UserClientMain {
     final BankingClientCryptographicManager crypto = new BankingClientCryptographicManager();
     BankingClientCryptographicManager.initializeCryptoCache();
     KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-    kpg.initialize(2048); KeyPair kp = kpg.generateKeyPair();
+    kpg.initialize(4096);
+    KeyPair kp = kpg.generateKeyPair();
     Utils.writeBytesToFile(
       kp.getPublic().getEncoded(),
       BankingClientCryptographicManager.buildSelfPublicKeyPath()

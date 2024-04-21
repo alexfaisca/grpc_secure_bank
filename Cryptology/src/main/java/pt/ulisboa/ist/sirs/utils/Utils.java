@@ -1,13 +1,26 @@
 package pt.ulisboa.ist.sirs.utils;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.json.*;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
 public class Utils {
+  public static byte[] readBytesFromPemFile(String resource) throws IOException {
+    try (InputStream in =  new FileInputStream(resource)) {
+      String pem = new String(in.readAllBytes(), StandardCharsets.ISO_8859_1);
+      Pattern parse = Pattern.compile("(?m)(?s)^---*BEGIN.*---*$(.*)^---*END.*---*$.*");
+      String encoded = parse.matcher(pem).replaceFirst("$1");
+      return Base64.getMimeDecoder().decode(encoded);
+    } catch (IOException e) {
+      throw new RuntimeException(e.getMessage());
+    }
+  }
 
   public static byte[] readBytesFromFile(String path) throws IOException {
     FileInputStream fis = new FileInputStream(path);

@@ -2,8 +2,14 @@ package pt.ulisboa.ist.sirs.bankserver;
 
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.bankserver.domain.BankState;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.io.*;
+import java.security.KeyFactory;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -94,7 +100,15 @@ public class BankServer {
               ...
           """);
 
-    try {
+    try (FileInputStream certFile = new FileInputStream(System.getenv("path-server-cert"))) {
+      CertificateFactory certGen = CertificateFactory.getInstance("X.509");
+      X509Certificate cert = (X509Certificate) certGen.generateCertificate(certFile);
+      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Utils.readBytesFromPemFile(System.getenv("path-server-key")));
+      Base.CryptographicCore.initializeSelfDirectory();
+      Utils.writeBytesToFile(cert.getPublicKey().getEncoded(), Base.CryptographicCore.getPublicKeyPath());
+      Utils.writeBytesToFile(keyFactory.generatePrivate(keySpec).getEncoded(), Base.CryptographicCore.getPrivateKeyPath());
+
       BankServer server = new BankServer(
           List.of(
               System.getenv("service-name"),

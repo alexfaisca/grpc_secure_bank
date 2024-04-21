@@ -5,6 +5,7 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.json.JsonObject;
+import java.io.File;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -56,6 +57,19 @@ public final class Base {
   }
 
   public interface CryptographicCore {
+    static void initializeSelfDirectory() {
+      File clientDirectory = new File("resources/crypto/self/");
+      if (!clientDirectory.exists())
+        if (!clientDirectory.mkdirs())
+          throw new RuntimeException("Could not store client key");
+    }
+    static String getPublicKeyPath() {
+      return "resources/crypto/self/publicKey";
+    }
+    static String getPrivateKeyPath() {
+      return "resources/crypto/self/privateKey";
+    }
+
     default boolean check(byte[] input, String secretKeyPath, String publicKeyPath, String ivPath)
         throws Exception {
       return Security.check(input, Base.readSecretKey(secretKeyPath), Base.readPublicKey(publicKeyPath),

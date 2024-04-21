@@ -6,6 +6,15 @@ enum Services {
     DatabaseServer = 1;
   }
 
+message DiffieHellmanExchangeRequest {
+  bytes clientPublic = 1;
+}
+
+message DiffieHellmanExchangeResponse {
+  bytes serverPublic = 1;
+  bytes parameters = 2;
+}
+
 message RegisterRequest {
   bytes request = 1;
 }

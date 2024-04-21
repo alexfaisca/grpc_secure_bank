@@ -1,24 +1,30 @@
 package pt.ulisboa.ist.sirs.databaseserver;
 
+import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseService;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.repository.DatabaseManager;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
+import java.security.KeyFactory;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.List;
 import java.util.Scanner;
 
 import io.grpc.*;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
 public class DatabaseServer {
   private final boolean debug;
   private final Server server;
   private final DatabaseManager state;
 
-  public DatabaseServer(List<String> args, boolean debug) throws IOException, NoSuchAlgorithmException {
+  public DatabaseServer(List<String> args, boolean debug) throws IOException {
     this.debug = debug;
     final String databaseAddress = args.get(2);
     final int databasePort = Integer.parseInt(args.get(3));
@@ -40,11 +46,11 @@ public class DatabaseServer {
     // "Last Tuesday's dinner", "Alice", OffsetDateTime.now());
 
     final DatabaseServerCryptographicManager cryptoCore = new DatabaseServerCryptographicManager(
-            crypto, args.get(6), args.get(7));
+            crypto, Base.CryptographicCore.getPublicKeyPath(), Base.CryptographicCore.getPrivateKeyPath());
 
     this.server = Grpc.newServerBuilderForPort(
         databasePort,
-        TlsServerCredentials.newBuilder().keyManager(new File(args.get(9)), new File(args.get(10))).build())
+        TlsServerCredentials.newBuilder().keyManager(new File(args.get(5)), new File(args.get(6))).build())
         .addService(ServerInterceptors.intercept(new DatabaseServerImpl(state, cryptoCore, debug), crypto)).build();
   }
 
@@ -91,10 +97,6 @@ public class DatabaseServer {
         System.getenv("server-name") == null ||
         System.getenv("server-address") == null ||
         System.getenv("server-port") == null ||
-        System.getenv("path-iv") == null ||
-        System.getenv("path-secret-key") == null ||
-        System.getenv("path-public-key") == null ||
-        System.getenv("path-private-key") == null ||
         System.getenv("path-server-trust-chain") == null ||
         System.getenv("path-server-cert") == null ||
         System.getenv("path-server-key") == null)
@@ -104,26 +106,27 @@ public class DatabaseServer {
               2.  <server-name>
               3.  <server-address>
               4.  <server-port>
-              5.  <path-iv>
-              6.  <path-secret-key>
-              7.  <path-public-key>
-              8.  <path-private-key>
-              9.  <path-server-trust-chain>
-              10. <path-server-cert>
-              11. <path-server-key>
+              5.  <path-server-trust-chain>
+              6. <path-server-cert>
+              7. <path-server-key>
           """);
 
-    try {
+    try (FileInputStream certFile = new FileInputStream(System.getenv("path-server-cert"))) {
+      CertificateFactory certGen = CertificateFactory.getInstance("X.509");
+      X509Certificate cert = (X509Certificate) certGen.generateCertificate(certFile);
+      KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+      PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Utils.readBytesFromPemFile(System.getenv("path-server-key")));
+      // Guarantee directory exists
+      Base.CryptographicCore.initializeSelfDirectory();
+      Utils.writeBytesToFile(cert.getPublicKey().getEncoded(), Base.CryptographicCore.getPublicKeyPath());
+      Utils.writeBytesToFile(keyFactory.generatePrivate(keySpec).getEncoded(), Base.CryptographicCore.getPrivateKeyPath());
+
       DatabaseServer databaseServer = new DatabaseServer(
           List.of(
               System.getenv("service-name"),
               System.getenv("server-name"),
               System.getenv("server-address"),
               System.getenv("server-port"),
-              System.getenv("path-iv"),
-              System.getenv("path-secret-key"),
-              System.getenv("path-public-key"),
-              System.getenv("path-private-key"),
               System.getenv("path-server-trust-chain"),
               System.getenv("path-server-cert"),
               System.getenv("path-server-key")),
