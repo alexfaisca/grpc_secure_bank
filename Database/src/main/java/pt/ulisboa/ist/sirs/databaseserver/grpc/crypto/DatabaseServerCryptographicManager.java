@@ -3,6 +3,7 @@ package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.io.File;
@@ -54,7 +55,7 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
     return nonces.get(crypto.getFromQueue(AuthenticateRequest.class));
   }
 
-  public void validateSession(byte[] publicKey) {
+  public void validateSession(byte[] publicKey) throws Exception {
     String client = crypto.getFromQueue(StillAliveRequest.class);
     Utils.writeBytesToFile(publicKey, buildPublicKeyPath(client));
   }
@@ -92,6 +93,15 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
   public StillAliveResponse encrypt(StillAliveResponse object) throws Exception {
     String client = crypto.popFromQueue(StillAliveRequest.class);
     return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+  }
+
+  public boolean check(StillAliveRequest object) throws Exception {
+    String client = crypto.getFromQueue(StillAliveRequest.class);
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+      crypto.popFromQueue(StillAliveRequest.class);
+      return false;
+    }
+    return true;
   }
 
   public StillAliveRequest decrypt(StillAliveRequest object) throws Exception {

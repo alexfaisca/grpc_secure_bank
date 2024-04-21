@@ -82,7 +82,11 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       crypto.setNonce((new Random()).nextInt());
       responseObserver.onNext(crypto.encrypt(AuthenticateResponse.newBuilder().setResponse(
         ByteString.copyFrom(
-          Utils.serializeJson(Json.createObjectBuilder().add("nonce", crypto.getNonce()).build())
+          Utils.serializeJson(
+            Json.createObjectBuilder()
+              .add("nonce", crypto.getNonce())
+              .add("publicKey", Utils.byteToHex(Base.readPublicKey("resources/crypto/publicKey").getEncoded()))
+              .build())
         )).build()));
       responseObserver.onCompleted();
     } catch (Exception e) {
@@ -99,10 +103,17 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
 
       if (!crypto.checkNonce(stillAliveJson.getInt("nonce") + 1))
         throw new TamperedMessageException();
-
       crypto.validateSession(Utils.hexToByte(stillAliveJson.getString("publicKey")));
+      if (!crypto.check(request))
+        throw new TamperedMessageException();
 
-      responseObserver.onNext(crypto.encrypt(StillAliveResponse.newBuilder().build()));
+      responseObserver.onNext(crypto.encrypt(StillAliveResponse.newBuilder().setResponse(
+        ByteString.copyFrom(
+          Utils.serializeJson(
+            Json.createObjectBuilder()
+              .add("challenge", stillAliveJson.getInt("challenge") + 1)
+              .build())
+      )).build()));
       responseObserver.onCompleted();
     } catch (Exception e) {
       e.printStackTrace();

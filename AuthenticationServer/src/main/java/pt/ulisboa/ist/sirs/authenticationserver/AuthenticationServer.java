@@ -2,7 +2,7 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
-import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicInterceptor;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.ServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 
 import java.io.*;
@@ -19,7 +19,7 @@ public class AuthenticationServer {
 
     final String authenticationServerAddress = args.get(2);
     final int authenticationServerPort = Integer.parseInt(args.get(3));
-    final AuthenticationServerCryptographicInterceptor interceptor = new AuthenticationServerCryptographicInterceptor();
+    final ServerCryptographicInterceptor interceptor = new ServerCryptographicInterceptor();
     final AuthenticationServerCryptographicManager crypto = new AuthenticationServerCryptographicManager(interceptor);
     this.state = new AuthenticationServerState.AuthenticationServerStateBuilder(
         crypto, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug).build();

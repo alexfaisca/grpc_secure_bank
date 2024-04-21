@@ -6,10 +6,10 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class AuthenticationServerCryptographicInterceptor implements ServerInterceptor {
+public class ServerCryptographicInterceptor implements ServerInterceptor {
     List<String> pendingAttributes = new ArrayList<>();
     Map<Class, List<String>> queue = new HashMap<>();
-    private static final Logger logger = Logger.getLogger(AuthenticationServerCryptographicInterceptor.class.getName());
+    private static final Logger logger = Logger.getLogger(ServerCryptographicInterceptor.class.getName());
 
     public boolean idQueued(Class requestClass) {
         return !queue.get(requestClass).isEmpty();

@@ -46,6 +46,24 @@ public final class Operations {
     return cipher.doFinal(cipherText);
   }
 
+  public static byte[] encryptDataAsymmetric(PrivateKey secretKey, byte[] message)
+      throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+      BadPaddingException {
+    Cipher cipher = Cipher.getInstance("RSA");
+    cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+
+    return cipher.doFinal(message);
+  }
+
+  public static byte[] decryptDataAsymmetric(PublicKey secretKey, byte[] cipherText)
+      throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+      BadPaddingException {
+    Cipher cipher = Cipher.getInstance("RSA");
+    cipher.init(Cipher.DECRYPT_MODE, secretKey);
+
+    return cipher.doFinal(cipherText);
+  }
+
   public static byte[] hash(byte[] message) throws NoSuchAlgorithmException {
     final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
     return messageDigest.digest(message);

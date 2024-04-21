@@ -46,22 +46,15 @@ public class UserService {
         Integer port,
         String authenticationServerAddress,
         Integer authenticationServerPort,
-        String ivPath,
-        String secretKeyPath,
-        String publicKeyPath,
-        String privateKeyPath,
         String trustCertCollectionPath,
+        BankingClientCryptographicManager crypto,
         boolean debug) throws Exception {
       this.debug = debug;
+      this.crypto = crypto;
       this.host = host;
       this.port = port;
       this.authenticationServerAddress = authenticationServerAddress;
       this.authenticationServerPort = authenticationServerPort;
-      this.crypto = new BankingClientCryptographicManager(
-          ivPath,
-          secretKeyPath,
-          publicKeyPath,
-          privateKeyPath);
       this.credentials = TlsChannelCredentials.newBuilder()
           .trustManager(new File(trustCertCollectionPath))
           .build();
@@ -111,11 +104,10 @@ public class UserService {
 
       // Client encodes his public key, and sends it to server.
       AuthenticationServer.DiffieHellmanExchangeResponse serverResponse = authenticationServerServiceStub.diffieHellmanExchange(
-              AuthenticationServer.DiffieHellmanExchangeRequest.newBuilder().setClientPublic(
-                      ByteString.copyFrom(
-                              keyPair.getPublic().getEncoded()
-                      )).setTimestamp(OffsetDateTime.now().toString()
-              ).build());
+        AuthenticationServer.DiffieHellmanExchangeRequest.newBuilder().setClientPublic(
+          ByteString.copyFrom(
+            keyPair.getPublic().getEncoded()
+          )).build());
 
       /*
        * Client uses server's public key for the first (and only) phase
@@ -137,11 +129,7 @@ public class UserService {
       Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
       cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
       byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 14);
-      Integer number =((temp[0] & 0xFF) << 24) |
-              ((temp[1] & 0xFF) << 16) |
-              ((temp[2] & 0xFF) << 8) |
-              ((temp[3] & 0xFF));
-      byte[] iv = Operations.generateIV(number, aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
+      byte[] iv = Operations.generateIV(Base.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
 
       File clientDirectory = new File("resources/crypto/client/");
       if (!clientDirectory.exists())
@@ -187,8 +175,13 @@ public class UserService {
       if (!clientDirectory.exists())
         if (!clientDirectory.mkdirs())
           throw new RuntimeException("Could not store client key");
-      Utils.writeBytesToFile(Utils.hexToByte(ticketJson.getString("sessionKey")),"resources/crypto/session/sessionKey");
-      Utils.writeBytesToFile(Utils.hexToByte(ticketJson.getString("sessionIv")),"resources/crypto/session/iv");
+
+      Utils.writeBytesToFile(Utils.hexToByte(
+        ticketJson.getString("sessionKey")),BankingClientCryptographicManager.buildSessionKeyPath()
+      );
+      Utils.writeBytesToFile(Utils.hexToByte(
+        ticketJson.getString("sessionIv")),BankingClientCryptographicManager.buildSessionIVPath()
+      );
 
       // Needham-Schroeder step 3
       BankServer.AuthenticateResponse authenticateDatabaseResponse = bankingServiceStub
@@ -202,15 +195,30 @@ public class UserService {
               .build());
 
       // Needham-Schroeder steps 4 and 5
-      StillAliveResponse ignored = bankingServiceStub.stillAlive(crypto.encrypt(StillAliveRequest.newBuilder().setRequest(
+      JsonObject authenticateJson = Utils.deserializeJson(crypto.decrypt(authenticateDatabaseResponse).getResponse().toByteArray());
+      int challenge = Base.generateRandom(Integer.MAX_VALUE).intValue();
+      Utils.writeBytesToFile(Utils.hexToByte(
+        authenticateJson.getString("publicKey")), BankingClientCryptographicManager.buildSessionPublicKeyPath()
+      );
+      if (!crypto.check(authenticateDatabaseResponse))
+        throw new RuntimeException("Authenticate response tampered");
+
+      StillAliveResponse stillAliveResponse = bankingServiceStub.stillAlive(crypto.encrypt(StillAliveRequest.newBuilder().setRequest(
         ByteString.copyFrom(
           Utils.serializeJson(Json.createObjectBuilder()
             .add(
-              "nonce", Utils.deserializeJson(crypto.decrypt(authenticateDatabaseResponse).getResponse().toByteArray()).getInt("nonce") - 1
+              "challenge", challenge
             ).add(
-              "publicKey", Utils.byteToHex(Utils.readBytesFromFile("resources/crypto/publicKey"))
+              "nonce", authenticateJson.getInt("nonce") - 1
+            ).add(
+              "publicKey", Utils.byteToHex(Utils.readBytesFromFile(BankingClientCryptographicManager.buildSelfPublicKeyPath()))
             ).build()
         ))).build()));
+      if (!crypto.check(stillAliveResponse))
+        throw new RuntimeException("Authenticate response tampered");
+      JsonObject stillAliveJson = Utils.deserializeJson(crypto.decrypt(stillAliveResponse).getResponse().toByteArray());
+      if(stillAliveJson.getInt("challenge") != challenge + 1)
+        throw new RuntimeException("Still alive challenge failed");
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
     } catch (Exception e) {

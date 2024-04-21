@@ -5,116 +5,152 @@ import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
+import java.io.File;
 import java.security.NoSuchAlgorithmException;
 
 public class BankingClientCryptographicManager extends BankingClientCryptographicCore implements Base.KeyManager {
-    private final int MOCK_HASH = 0;
-    public BankingClientCryptographicManager(
-            String ivPath,
-            String secretKeyPath,
-            String publicKeyPath,
-            String privateKeyPath
-    ) {
-        super();
-        this.addIvPath(MOCK_HASH, ivPath);
-        this.addSecretKeyPath(MOCK_HASH, secretKeyPath);
-        this.addPublicKeyPath(MOCK_HASH, publicKeyPath);
-        this.addPrivateKeyPath(MOCK_HASH, privateKeyPath);
-    }
+  private final int MOCK_HASH = 0;
 
-    public String encryptPassword(String password) throws NoSuchAlgorithmException {
-        return Utils.byteToHex(Operations.hash(password.getBytes()));
-    }
+  public BankingClientCryptographicManager() {
+    super();
+  }
 
-    public <P> P encrypt(P object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public static void initializeCryptoCache() {
+    File clientDirectory = new File("resources/crypto/client/");
+    File sessionDirectory = new File("resources/crypto/session/");
+    if (!clientDirectory.exists())
+      if (!clientDirectory.mkdirs())
+        throw new RuntimeException("Could not initialize client dir");
+    if (!sessionDirectory.exists())
+      if (!sessionDirectory.mkdirs())
+        throw new RuntimeException("Could not initialize session dir");
+  }
 
-    public <P> boolean check(P object) throws Exception {
-        return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public static String buildSessionKeyPath() {
+    return "resources/crypto/session/sessionKey";
+  }
 
-    public <P> P decrypt(P object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public static String buildSessionIVPath() {
+    return "resources/crypto/session/iv";
+  }
 
-    public AuthenticateResponse decrypt(AuthenticateResponse object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public static String buildSessionPublicKeyPath() {
+    return "resources/crypto/session/publicKey";
+  }
 
-    public StillAliveRequest encrypt(StillAliveRequest object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public static String buildSelfPublicKeyPath() {
+    return "resources/crypto/client/publicKey";
+  }
 
-    public BalanceRequest encrypt(BalanceRequest object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public static String buildSelfPrivateKeyPath() {
+    return "resources/crypto/client/privateKey";
+  }
 
-    public boolean check(BalanceResponse object) throws Exception {
-        return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public String encryptPassword(String password) throws NoSuchAlgorithmException {
+    return Utils.byteToHex(Operations.hash(password.getBytes()));
+  }
 
-    public BalanceResponse decrypt(BalanceResponse object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public <P> P encrypt(P object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
 
-    public CreateAccountRequest encrypt(CreateAccountRequest object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public <P> boolean check(P object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
 
-    public boolean check(CreateAccountResponse object) throws Exception {
-        return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public <P> P decrypt(P object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
 
-    public CreateAccountResponse decrypt(CreateAccountResponse object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public boolean check(AuthenticateResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
 
-    public DeleteAccountRequest encrypt(DeleteAccountRequest object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public AuthenticateResponse decrypt(AuthenticateResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
 
-    public boolean check(DeleteAccountResponse object) throws Exception {
-        return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public boolean check(StillAliveResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
 
-    public DeleteAccountResponse decrypt(DeleteAccountResponse object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public StillAliveResponse decrypt(StillAliveResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
 
-    public GetMovementsRequest encrypt(GetMovementsRequest object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public StillAliveRequest encrypt(StillAliveRequest object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
 
-    public boolean check(GetMovementsResponse object) throws Exception {
-        return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public BalanceRequest encrypt(BalanceRequest object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
 
-    public GetMovementsResponse decrypt(GetMovementsResponse object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public boolean check(BalanceResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
 
-    public AddExpenseRequest encrypt(AddExpenseRequest object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public BalanceResponse decrypt(BalanceResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
 
-    public boolean check(AddExpenseResponse object) throws Exception {
-        return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public CreateAccountRequest encrypt(CreateAccountRequest object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
 
-    public AddExpenseResponse decrypt(AddExpenseResponse object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public boolean check(CreateAccountResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
 
-    public OrderPaymentRequest encrypt(OrderPaymentRequest object) throws Exception {
-        return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public CreateAccountResponse decrypt(CreateAccountResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
 
-    public boolean check(OrderPaymentResponse object) throws Exception {
-        return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public DeleteAccountRequest encrypt(DeleteAccountRequest object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
 
-    public OrderPaymentResponse decrypt(OrderPaymentResponse object) throws Exception {
-        return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
-    }
+  public boolean check(DeleteAccountResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
+
+  public DeleteAccountResponse decrypt(DeleteAccountResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
+
+  public GetMovementsRequest encrypt(GetMovementsRequest object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
+
+  public boolean check(GetMovementsResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
+
+  public GetMovementsResponse decrypt(GetMovementsResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
+
+  public AddExpenseRequest encrypt(AddExpenseRequest object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
+
+  public boolean check(AddExpenseResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
+
+  public AddExpenseResponse decrypt(AddExpenseResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
+
+  public OrderPaymentRequest encrypt(OrderPaymentRequest object) throws Exception {
+    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
+  }
+
+  public boolean check(OrderPaymentResponse object) throws Exception {
+    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
+  }
+
+  public OrderPaymentResponse decrypt(OrderPaymentResponse object) throws Exception {
+    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
 }

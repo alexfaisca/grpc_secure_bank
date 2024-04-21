@@ -2,6 +2,7 @@ package pt.ulisboa.ist.sirs.userclient.tools;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Security;
+import pt.ulisboa.ist.sirs.userclient.grpc.crypto.BankingClientCryptographicManager;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.SecretKey;
@@ -14,12 +15,12 @@ public class SecureDocument {
   PrivateKey privateKey;
   byte[] iv;
 
-  public SecureDocument(String ivPath, String secretKeyPath, String publicKeyPath, String privateKeyPath)
+  public SecureDocument()
       throws Exception {
-    this.iv = Base.readIv(ivPath);
-    this.secretKey = Base.readSecretKey(secretKeyPath);
-    this.publicKey = Base.readPublicKey(publicKeyPath);
-    this.privateKey = Base.readPrivateKey(privateKeyPath);
+    this.iv = Base.readIv(BankingClientCryptographicManager.buildSessionIVPath());
+    this.secretKey = Base.readSecretKey(BankingClientCryptographicManager.buildSessionKeyPath());
+    this.publicKey = Base.readPublicKey(BankingClientCryptographicManager.buildSelfPublicKeyPath());
+    this.privateKey = Base.readPrivateKey(BankingClientCryptographicManager.buildSelfPrivateKeyPath());
   }
 
   private SecretKey getSecretKey() {

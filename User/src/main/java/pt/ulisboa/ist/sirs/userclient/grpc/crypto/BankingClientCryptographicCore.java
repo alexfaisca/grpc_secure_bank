@@ -26,6 +26,26 @@ public abstract class BankingClientCryptographicCore implements Base.Cryptograph
     throw new Exception("No such response");
   }
 
+  protected static boolean check(AuthenticateResponse message,
+      String secretKeyPath, String publicKeyPath, String ivPath)
+      throws Exception {
+    return Decrypter.check(
+        message.getResponse().toByteArray(),
+        Base.readSecretKey(secretKeyPath),
+        Base.readPublicKey(publicKeyPath),
+        Base.readIv(ivPath));
+  }
+
+  protected static boolean check(StillAliveResponse message,
+      String secretKeyPath, String publicKeyPath, String ivPath)
+      throws Exception {
+    return Decrypter.check(
+        message.getResponse().toByteArray(),
+        Base.readSecretKey(secretKeyPath),
+        Base.readPublicKey(publicKeyPath),
+        Base.readIv(ivPath));
+  }
+
   protected static boolean check(BalanceResponse message,
       String secretKeyPath, String publicKeyPath, String ivPath)
       throws Exception {
@@ -76,6 +96,15 @@ public abstract class BankingClientCryptographicCore implements Base.Cryptograph
   protected static AuthenticateResponse decrypt(AuthenticateResponse message,
       String secretKeyPath, String ivPath) throws Exception {
     return AuthenticateResponse.newBuilder().setResponse(
+        ByteString.copyFrom(Utils.serializeJson(
+            Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath),
+                Base.readIv(ivPath)))))
+        .build();
+  }
+
+  protected static StillAliveResponse decrypt(StillAliveResponse message,
+      String secretKeyPath, String ivPath) throws Exception {
+    return StillAliveResponse.newBuilder().setResponse(
         ByteString.copyFrom(Utils.serializeJson(
             Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath),
                 Base.readIv(ivPath)))))

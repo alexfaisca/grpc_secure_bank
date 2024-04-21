@@ -19,10 +19,6 @@
   	<arg.server-port>2001</arg.server-port>
   	<arg.authentication-server-address>localhost</arg.authentication-server-address>
   	<arg.authentication-server-port>2005</arg.authentication-server-port>
-  	<arg.path-iv>resources/crypto/session/iv</arg.path-iv>
-  	<arg.path-secret-key>resources/crypto/session/sessionKey</arg.path-secret-key>
-  	<arg.path-public-key>resources/crypto/publicKey</arg.path-public-key>
-  	<arg.path-private-key>resources/crypto/privateKey</arg.path-private-key>
   	<arg.path-user-trust-chain>resources/certificates/cert.pem</arg.path-user-trust-chain>
     <!-- maven plugins -->
     <version.exec-maven-plugin>3.0.0</version.exec-maven-plugin>

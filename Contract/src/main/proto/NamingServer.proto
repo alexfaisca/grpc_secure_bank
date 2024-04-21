@@ -1,0 +1,41 @@
+syntax = "proto3";
+package pt.ulisboa.ist.sirs.contract.namingserver;
+
+enum Services {
+    BankServer = 0;
+    DatabaseServer = 1;
+  }
+
+message RegisterRequest {
+  bytes request = 1;
+}
+
+message RegisterResponse {
+  bytes response = 1;
+}
+
+message LookupRequest {
+  bytes request = 1;
+}
+
+message LookupResponse {
+  message ServerEntryResponse {
+    string address = 1;
+    string qualifier = 2;
+  }
+  bytes response = 1;
+}
+
+message DeleteRequest {
+  bytes request = 1;
+}
+
+message DeleteResponse {
+  bytes request = 1;
+}
+
+service NamingServerService {
+  rpc register(RegisterRequest) returns (RegisterResponse);
+  rpc lookup(LookupRequest) returns (LookupResponse);
+  rpc delete(DeleteRequest) returns (DeleteResponse);
+}

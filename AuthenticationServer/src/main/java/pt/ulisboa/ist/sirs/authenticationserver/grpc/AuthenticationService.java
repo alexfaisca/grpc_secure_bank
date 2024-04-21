@@ -143,11 +143,7 @@ public class AuthenticationService {
     // format
     byte[] encodedParams = cipher.getParameters().getEncoded();
     byte[] temp = Arrays.copyOfRange(encodedParams, 10, 14);
-    Integer number =((temp[0] & 0xFF) << 24) |
-            ((temp[1] & 0xFF) << 16) |
-            ((temp[2] & 0xFF) << 8) |
-            ((temp[3] & 0xFF));
-    byte[] iv = Operations.generateIV(number, aesKey.getEncoded(),
+    byte[] iv = Operations.generateIV(Base.byteArrayToInt(temp), aesKey.getEncoded(),
         Utils.byteToHex(sharedSecret));
 
     // Cache client crypto data

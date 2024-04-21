@@ -36,7 +36,7 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
       request = crypto.decrypt(request);
 
       DiffieHellmanExchangeParameters params = state.diffieHellmanExchange(
-        request.getClientPublic().toByteArray(), client, OffsetDateTime.parse(request.getTimestamp())
+        request.getClientPublic().toByteArray()
       );
 
       responseObserver.onNext(crypto.encrypt(DiffieHellmanExchangeResponse.newBuilder()

@@ -25,6 +25,16 @@ public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
     throw new Exception("No such response");
   }
 
+  protected static boolean check(StillAliveRequest message,
+      String secretKeyPath, String publicKeyPath, String ivPath)
+      throws Exception {
+    return Decrypter.check(
+        message.getRequest().toByteArray(),
+        Base.readSecretKey(secretKeyPath),
+        Base.readPublicKey(publicKeyPath),
+        Base.readIv(ivPath));
+  }
+
   protected static boolean check(BalanceRequest message,
       String secretKeyPath, String publicKeyPath, String ivPath)
       throws Exception {
