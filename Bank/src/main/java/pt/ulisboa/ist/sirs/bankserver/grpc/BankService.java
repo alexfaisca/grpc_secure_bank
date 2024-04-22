@@ -1,10 +1,10 @@
 package pt.ulisboa.ist.sirs.bankserver.grpc;
 
 import io.grpc.*;
+import pt.ulisboa.ist.sirs.bankserver.dto.ServerDetails;
 import pt.ulisboa.ist.sirs.bankserver.grpc.crypto.AuthenticationClientCryptographicManager;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
-import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc.DatabaseServiceBlockingStub;
 
 import com.google.protobuf.ByteString;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer;
@@ -37,8 +37,8 @@ public class BankService {
     private final String address;
     private final Integer port;
     private final AuthenticationClientCryptographicManager crypto;
-    private final ChannelCredentials credentials;
-    private final DatabaseServiceBlockingStub databaseServerStub;
+    private final ChannelCredentials namingServerCredentials;
+    private final ChannelCredentials databaseServerCredentials;
     private ManagedChannel namingServerChannel;
     String namingServerAddress;
     Integer namingServerPort;
@@ -48,8 +48,6 @@ public class BankService {
         String qualifier,
         String address,
         Integer port,
-        String databaseHost,
-        Integer databasePort,
         String namingServerAddress,
         Integer namingServerPort,
         String certPath,
@@ -66,25 +64,20 @@ public class BankService {
       this.port = port;
       this.namingServerAddress = namingServerAddress;
       this.namingServerPort = namingServerPort;
-      this.credentials = TlsChannelCredentials.newBuilder()
+      this.namingServerCredentials = TlsChannelCredentials.newBuilder()
         .trustManager(new File(trustCertCollectionPath))
         .build();
-      final ChannelCredentials databaseCredentials = TlsChannelCredentials.newBuilder()
+      this.databaseServerCredentials = TlsChannelCredentials.newBuilder()
         .trustManager(new File(trustCertCollectionPath))
         .keyManager(new File(certPath), new File(connectionKeyPath))
         .build();
-      final Channel channel = Grpc.newChannelBuilderForAddress(
-        databaseHost,
-        databasePort,
-        databaseCredentials).build();
-      this.databaseServerStub = DatabaseServiceGrpc.newBlockingStub(channel);
     }
 
     public BankService build() throws Exception {
       this.namingServerChannel = Grpc.newChannelBuilderForAddress(
         this.namingServerAddress,
         this.namingServerPort,
-        this.credentials).build();
+        this.namingServerCredentials).build();
       return new BankService(this);
     }
   }
@@ -105,9 +98,14 @@ public class BankService {
     this.port = builder.port;
     this.crypto = builder.crypto;
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(builder.namingServerChannel);
-    this.databaseServerStub = builder.databaseServerStub;
     this.encryptedKeyExchange();
     this.register();
+    final ServerDetails serverDetails = this.lookup();
+    this.databaseServerStub = DatabaseServiceGrpc.newBlockingStub(Grpc.newChannelBuilderForAddress(
+      serverDetails.address(),
+      serverDetails.port(),
+      builder.databaseServerCredentials
+    ).build());
   }
 
   public String getServerServiceName() {
@@ -245,6 +243,29 @@ public class BankService {
             List.of(NamingServer.Services.BankServer.name(), getServerAddress(), getServerPort().toString(), getServerName()))),
         Utils.readBytesFromFile(crypto.buildIVPath())
     ))).build());
+  }
+
+  public ServerDetails lookup() throws Exception {
+    if (isDebug())
+      System.out.println("\t\t\tDatabaseService: Registering service");
+    NamingServer.LookupResponse response = namingServerStub.lookup(NamingServer.LookupRequest.newBuilder()
+      .setRequest(ByteString.copyFrom(Operations.encryptData(
+        Base.readSecretKey(crypto.buildSessionKeyPath()),
+        Utils.serializeJson(
+          Utils.createJson(
+            List.of("service"),
+            List.of(NamingServer.Services.DatabaseServer.name()))),
+        Utils.readBytesFromFile(crypto.buildIVPath())
+    ))).build());
+    JsonObject responseJson = Utils.deserializeJson(Operations.decryptData(
+      Base.readSecretKey(crypto.buildSessionKeyPath()),
+      response.getResponse().toByteArray(),
+      Base.readIv(crypto.buildIVPath())
+    ));
+    System.out.println(responseJson.getString("address"));
+    System.out.println(responseJson.getInt("port"));
+    System.out.println(responseJson.getString("qualifier"));
+    return new ServerDetails(responseJson.getString("address"), responseJson.getInt("port"), responseJson.getString("qualifier"));
   }
 
   public void delete() throws Exception {

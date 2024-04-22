@@ -92,8 +92,6 @@ public class AuthenticationServerState {
     }
   }
 
-
-
   public void register() {
     service.register();
   }

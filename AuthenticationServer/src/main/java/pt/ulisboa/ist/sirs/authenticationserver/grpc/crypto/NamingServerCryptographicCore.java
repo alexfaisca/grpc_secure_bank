@@ -61,4 +61,28 @@ public class NamingServerCryptographicCore implements Base.CryptographicCore {
           Base.readIv(ivPath))
     )).build();
   }
+
+  protected static LookupRequest decrypt(
+          LookupRequest message, String secretKeyPath, String ivPath
+  ) throws Exception {
+    return LookupRequest.newBuilder().setRequest(
+      ByteString.copyFrom(
+        Operations.decryptData(
+          Base.readSecretKey(secretKeyPath),
+          message.getRequest().toByteArray(),
+          Base.readIv(ivPath))
+    )).build();
+  }
+
+  protected static LookupResponse encrypt(
+          LookupResponse message, String secretKeyPath, String ivPath
+  ) throws Exception {
+    return LookupResponse.newBuilder().setResponse(
+      ByteString.copyFrom(
+        Operations.encryptData(
+          Base.readSecretKey(secretKeyPath),
+          message.getResponse().toByteArray(),
+          Base.readIv(ivPath))
+    )).build();
+  }
 }

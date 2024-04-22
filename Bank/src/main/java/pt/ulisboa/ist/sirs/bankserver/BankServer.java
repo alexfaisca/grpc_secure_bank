@@ -25,19 +25,17 @@ public class BankServer {
 
     final String bankAddress = args.get(2);
     final int bankPort = Integer.parseInt(args.get(3));
-    final String databaseAddress = args.get(4);
-    final int databasePort = Integer.parseInt(args.get(5));
-    final String authenticationServerAddress = args.get(6);
-    final int authenticationServerPort = Integer.parseInt(args.get(7));
+    final String authenticationServerAddress = args.get(4);
+    final int authenticationServerPort = Integer.parseInt(args.get(5));
 
     this.state = new BankState.BankStateBuilder(
-        args.get(0), args.get(1), bankAddress, bankPort, databaseAddress, databasePort, authenticationServerAddress,
-        authenticationServerPort, args.get(8), args.get(9), args.get(10), new AuthenticationClientCryptographicManager(), debug).build();
+        args.get(0), args.get(1), bankAddress, bankPort, authenticationServerAddress,
+        authenticationServerPort, args.get(6), args.get(7), args.get(8), new AuthenticationClientCryptographicManager(), debug).build();
 
     final BindableService bankingService = new BankServerImpl(state, debug);
 
     TlsServerCredentials.Builder tlsBuilder = TlsServerCredentials.newBuilder()
-        .keyManager(new File(args.get(9)), new File(args.get(10)));
+        .keyManager(new File(args.get(7)), new File(args.get(8)));
     this.server = Grpc.newServerBuilderForPort(bankPort, tlsBuilder.build()).addService(bankingService)
         .build();
   }
@@ -84,8 +82,6 @@ public class BankServer {
         System.getenv("server-name") == null ||
         System.getenv("server-address") == null ||
         System.getenv("server-port") == null ||
-        System.getenv("database-address") == null ||
-        System.getenv("database-port") == null ||
         System.getenv("authentication-server-address") == null ||
         System.getenv("authentication-server-port") == null ||
         System.getenv("path-server-trust-chain") == null ||
@@ -97,13 +93,11 @@ public class BankServer {
               2.  <server-name>
               3.  <server-address>
               4.  <server-port>
-              5.  <database-address>
-              6.  <database-port>
-              7.  <authentication-server-address>
-              8.  <authentication-server-port>
-              9.  <path-server-trust-chain>
-              10. <path-server-cert>
-              11. <path-server-key>
+              5.  <authentication-server-address>
+              6.  <authentication-server-port>
+              7.  <path-server-trust-chain>
+              8. <path-server-cert>
+              9. <path-server-key>
               ...
           """);
 
@@ -122,8 +116,6 @@ public class BankServer {
           System.getenv("server-name"),
           System.getenv("server-address"),
           System.getenv("server-port"),
-          System.getenv("database-address"),
-          System.getenv("database-port"),
           System.getenv("authentication-server-address"),
           System.getenv("authentication-server-port"),
           System.getenv("path-server-trust-chain"),

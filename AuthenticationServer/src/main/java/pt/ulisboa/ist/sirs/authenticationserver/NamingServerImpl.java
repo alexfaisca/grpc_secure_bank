@@ -5,6 +5,8 @@ import io.grpc.stub.StreamObserver;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.NamingServerState;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.utils.ServiceTypesConverter;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.dto.TargetServer;
+import pt.ulisboa.ist.sirs.authenticationserver.exceptions.ServiceHasNoRegisteredServersException;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.NamingServerCryptographicManager;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer.*;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceImplBase;
@@ -22,6 +24,7 @@ import java.io.File;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.List;
 
 public final class NamingServerImpl extends NamingServerServiceImplBase {
   private final boolean debug;
@@ -146,6 +149,36 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       );
 
       responseObserver.onNext(crypto.encrypt(RegisterResponse.getDefaultInstance()));
+      responseObserver.onCompleted();
+    } catch (Exception e) {
+      if (debug) System.out.println(e.getMessage());
+      e.printStackTrace();
+      responseObserver.onError(new RuntimeException(e.getMessage()));
+    }
+  }
+
+  @Override
+  public void lookup(LookupRequest request, StreamObserver<LookupResponse> responseObserver) {
+    try {
+      String client = crypto.getClientHash(request);
+      if (!crypto.checkServerCache(client))
+        throw new RuntimeException("Please perform eke first.");
+      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
+
+      List<TargetServer> servers = state.lookupServiceServers(
+        ServiceTypesConverter.convert(Services.valueOf(requestJson.getString("service")))
+      );
+      if (servers.isEmpty())
+        throw new ServiceHasNoRegisteredServersException(ServiceTypesConverter.convert(Services.valueOf(requestJson.getString("service"))).name());
+
+      responseObserver.onNext(crypto.encrypt(LookupResponse.newBuilder().setResponse(
+        ByteString.copyFrom(
+          Utils.serializeJson(Json.createObjectBuilder()
+            .add("address", servers.get(0).address())
+            .add("port", servers.get(0).port())
+            .add("qualifier", servers.get(0).qualifier())
+            .build())
+      )).build()));
       responseObserver.onCompleted();
     } catch (Exception e) {
       if (debug) System.out.println(e.getMessage());
