@@ -1,6 +1,7 @@
 package pt.ulisboa.ist.sirs.databaseserver;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AuthenticationClientCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseService;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
@@ -24,14 +25,13 @@ public class DatabaseServer {
   private final Server server;
   private final DatabaseManager state;
 
-  public DatabaseServer(List<String> args, boolean debug) throws IOException {
+  public DatabaseServer(List<String> args, boolean debug) throws Exception {
     this.debug = debug;
     final String databaseAddress = args.get(2);
     final int databasePort = Integer.parseInt(args.get(3));
+    final String namingServerAddress = args.get(4);
+    final int namingServerPort = Integer.parseInt(args.get(5));
     final DatabaseServerCryptographicInterceptor crypto = new DatabaseServerCryptographicInterceptor();
-
-    this.state = new DatabaseManager(
-        new DatabaseService(args.get(0), args.get(1), databaseAddress, databasePort, debug));
 
     // // Test add account
     // state.createAccount(Collections.singletonList("Alice"),
@@ -46,19 +46,34 @@ public class DatabaseServer {
     // "Last Tuesday's dinner", "Alice", OffsetDateTime.now());
 
     final DatabaseServerCryptographicManager cryptoCore = new DatabaseServerCryptographicManager(
-            crypto, Base.CryptographicCore.getPublicKeyPath(), Base.CryptographicCore.getPrivateKeyPath());
+      crypto, Base.CryptographicCore.getPublicKeyPath(), Base.CryptographicCore.getPrivateKeyPath()
+    );
+
+    this.state = new DatabaseManager(
+      new DatabaseService.DatabaseServiceBuilder(
+        args.get(0),
+        args.get(1),
+        databaseAddress,
+        databasePort,
+        namingServerAddress,
+        namingServerPort,
+        args.get(7),
+        new AuthenticationClientCryptographicManager(),
+        debug)
+    .build());
+
 
     this.server = Grpc.newServerBuilderForPort(
-        databasePort,
-        TlsServerCredentials.newBuilder().keyManager(new File(args.get(5)), new File(args.get(6))).build())
-        .addService(ServerInterceptors.intercept(new DatabaseServerImpl(state, cryptoCore, debug), crypto)).build();
+      databasePort,
+      TlsServerCredentials.newBuilder().keyManager(new File(args.get(7)), new File(args.get(8))).build())
+      .addService(ServerInterceptors.intercept(new DatabaseServerImpl(state, cryptoCore, debug), crypto)).build();
   }
 
   private void serverStartup() throws IOException {
     if (debug)
       System.out.println("Database: Starting up '" + state.getService().getServerServiceName() + "''s '"
-          + state.getService().getServerName() + "' server at " + state.getService().getServerAddress() + ":"
-          + state.getService().getServerPort());
+        + state.getService().getServerName() + "' server at " + state.getService().getServerAddress() + ":"
+        + state.getService().getServerPort());
     server.start();
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       try {
@@ -72,8 +87,8 @@ public class DatabaseServer {
   private void serverShutdown() throws InterruptedException {
     if (debug)
       System.out.println("Database: Deleting '" + state.getService().getServerServiceName() + "''s '"
-          + state.getService().getServerName() + "' server at " + state.getService().getServerAddress() + ":"
-          + state.getService().getServerPort());
+        + state.getService().getServerName() + "' server at " + state.getService().getServerAddress() + ":"
+        + state.getService().getServerPort());
     state.shutDown();
     server.shutdownNow();
     System.out.println("Shutting down.");
@@ -82,7 +97,7 @@ public class DatabaseServer {
 
   private void blockUntilShutDown() throws InterruptedException {
     System.out.println("Press ENTER to delete '" + state.getService().getServerServiceName() + "''s '"
-        + state.getService().getServerName() + "' server.");
+      + state.getService().getServerName() + "' server.");
     try (Scanner scan = new Scanner(System.in)) {
       scan.nextLine();
     }
@@ -97,6 +112,8 @@ public class DatabaseServer {
         System.getenv("server-name") == null ||
         System.getenv("server-address") == null ||
         System.getenv("server-port") == null ||
+        System.getenv("naming-server-address") == null ||
+        System.getenv("naming-server-port") == null ||
         System.getenv("path-server-trust-chain") == null ||
         System.getenv("path-server-cert") == null ||
         System.getenv("path-server-key") == null)
@@ -127,6 +144,8 @@ public class DatabaseServer {
               System.getenv("server-name"),
               System.getenv("server-address"),
               System.getenv("server-port"),
+              System.getenv("naming-server-address"),
+              System.getenv("naming-server-port"),
               System.getenv("path-server-trust-chain"),
               System.getenv("path-server-cert"),
               System.getenv("path-server-key")),

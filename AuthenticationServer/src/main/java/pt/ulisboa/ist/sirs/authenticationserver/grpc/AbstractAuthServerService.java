@@ -17,13 +17,12 @@ import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
-public abstract class CryptoService {
+public abstract class AbstractAuthServerService {
   public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(
           String symmetricKeyPath, String IVPath, byte[] clientPubEnc
   ) throws Exception {
     KeyFactory serverKeyFac = KeyFactory.getInstance("DH");
     X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(clientPubEnc);
-
     PublicKey clientPublic = serverKeyFac.generatePublic(x509KeySpec);
 
     // Server gets DH parameters from client's public Key
@@ -58,8 +57,7 @@ public abstract class CryptoService {
     // format
     byte[] encodedParams = cipher.getParameters().getEncoded();
     byte[] temp = Arrays.copyOfRange(encodedParams, 10, 14);
-    byte[] iv = Operations.generateIV(Base.byteArrayToInt(temp), aesKey.getEncoded(),
-            Utils.byteToHex(sharedSecret));
+    byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
 
     // Cache client crypto data
     Utils.writeBytesToFile(aesKey.getEncoded(), symmetricKeyPath);

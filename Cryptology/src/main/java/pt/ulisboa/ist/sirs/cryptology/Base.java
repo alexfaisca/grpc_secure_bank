@@ -114,21 +114,6 @@ public final class Base {
     return (new SecureRandom()).nextLong(max);
   }
 
-  public static byte[] intToByteArray(int value) {
-    return new byte[] {
-        (byte) (value >>> 24),
-        (byte) (value >>> 16),
-        (byte) (value >>> 8),
-        (byte) value };
-  }
-
-  public static int byteArrayToInt(byte[] value) {
-    return  ((value[0] & 0xFF) << 24) |
-            ((value[1] & 0xFF) << 16) |
-            ((value[2] & 0xFF) << 8) |
-            ((value[3] & 0xFF));
-  }
-
   public static SecretKey readSecretKey(String secretKeyPath) throws Exception {
     return new SecretKeySpec(Utils.readBytesFromFile(secretKeyPath), "AES");
   }

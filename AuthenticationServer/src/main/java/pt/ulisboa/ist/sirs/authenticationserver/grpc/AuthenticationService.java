@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.*;
 
-public final class AuthenticationService extends CryptoService {
+public final class AuthenticationService extends AbstractAuthServerService {
   public static class AuthenticationServerServiceBuilder {
 
     private final boolean debug;

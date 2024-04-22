@@ -1,7 +1,5 @@
 package pt.ulisboa.ist.sirs.cryptology;
 
-import pt.ulisboa.ist.sirs.utils.Utils;
-
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -23,7 +21,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public final class Operations {
-
   public static byte[] encryptData(SecretKey secretKey, byte[] message, byte[] iv)
       throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
       BadPaddingException, InvalidAlgorithmParameterException {
@@ -51,7 +48,6 @@ public final class Operations {
       BadPaddingException {
     Cipher cipher = Cipher.getInstance("RSA");
     cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-
     return cipher.doFinal(message);
   }
 
@@ -60,7 +56,6 @@ public final class Operations {
       BadPaddingException {
     Cipher cipher = Cipher.getInstance("RSA");
     cipher.init(Cipher.DECRYPT_MODE, secretKey);
-
     return cipher.doFinal(cipherText);
   }
 
@@ -106,13 +101,13 @@ public final class Operations {
   public static byte[] generateIV(Integer id, byte[] secretKey, String secret) {
     try {
       return Arrays.copyOf(
-          encryptData(
-              new SecretKeySpec(secretKey, "AES"),
-              MessageDigest.getInstance("SHA-256").digest(secret.getBytes()),
-              Arrays.copyOf(
-                  MessageDigest.getInstance("SHA-256").digest(ByteBuffer.allocate(Integer.BYTES).putInt(id).array()),
-                  16)),
-          16);
+        encryptData(
+          new SecretKeySpec(secretKey, "AES"),
+          MessageDigest.getInstance("SHA-256").digest(secret.getBytes()),
+          Arrays.copyOf(
+            MessageDigest.getInstance("SHA-256").digest(ByteBuffer.allocate(Integer.BYTES).putInt(id).array()),
+            16)),
+        16);
     } catch (Exception e) {
       System.out.println(e.getMessage());
     }

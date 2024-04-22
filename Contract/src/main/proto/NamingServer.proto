@@ -15,7 +15,8 @@ message InitiateEncryptedKeyExchangeResponse {
 
 message EncryptedKeyExchangeRequest {
   bytes clientCert = 1;
-  bytes clientParams = 2;
+  bytes clientOps = 2;
+  bytes clientParams = 3;
 }
 
 message EncryptedKeyExchangeResponse {

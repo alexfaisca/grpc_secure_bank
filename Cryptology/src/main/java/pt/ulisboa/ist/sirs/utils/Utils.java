@@ -50,6 +50,21 @@ public class Utils {
     return jsonBuilder.build();
   }
 
+  public static byte[] intToByteArray(int value) {
+    return new byte[] {
+            (byte) (value >>> 24),
+            (byte) (value >>> 16),
+            (byte) (value >>> 8),
+            (byte) value };
+  }
+
+  public static int byteArrayToInt(byte[] value) {
+    return  ((value[0] & 0xFF) << 24) |
+            ((value[1] & 0xFF) << 16) |
+            ((value[2] & 0xFF) << 8) |
+            ((value[3] & 0xFF));
+  }
+
   public static byte[] serializeJson(JsonObject json) {
     return json.toString().getBytes();
   }

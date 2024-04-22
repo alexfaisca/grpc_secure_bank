@@ -131,7 +131,7 @@ public class UserService {
       Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
       cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
       byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 14);
-      byte[] iv = Operations.generateIV(Base.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
+      byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
 
       File clientDirectory = new File("resources/crypto/client/");
       if (!clientDirectory.exists())
