@@ -5,36 +5,35 @@ import pt.ulisboa.ist.sirs.bankserver.grpc.BankService;
 import java.io.IOException;
 
 public class BankState {
-
   public static class BankStateBuilder {
     private final boolean debug;
     private final BankService service;
-
     public BankStateBuilder(
-        String serverService,
-        String serverName,
-        String host,
-        Integer port,
-        String databaseHost,
-        Integer databasePort,
-        String trustChainPath,
-        String certChainPath,
-        String connectionKeyPath,
-        boolean debug) throws IOException {
+      String serverService,
+      String serverName,
+      String host,
+      Integer port,
+      String databaseHost,
+      Integer databasePort,
+      String trustChainPath,
+      String certChainPath,
+      String connectionKeyPath,
+      boolean debug
+    ) throws IOException {
       this.debug = debug;
       this.service = new BankService.BankServiceBuilder(
-          serverService,
-          serverName,
-          host,
-          port,
-          databaseHost,
-          databasePort,
-          trustChainPath,
-          certChainPath,
-          connectionKeyPath,
-          debug).build();
+        serverService,
+        serverName,
+        host,
+        port,
+        databaseHost,
+        databasePort,
+        trustChainPath,
+        certChainPath,
+        connectionKeyPath,
+        debug
+      ).build();
     }
-
     public BankState build() {
       return new BankState(this);
     }

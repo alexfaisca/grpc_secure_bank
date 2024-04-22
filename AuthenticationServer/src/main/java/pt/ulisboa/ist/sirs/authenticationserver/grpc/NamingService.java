@@ -18,12 +18,13 @@ public final class NamingService extends AbstractAuthServerService {
     private final String name;
 
     public NamingServerServiceBuilder(
-        NamingServerCryptographicManager crypto,
-        String service,
-        String qualifier,
-        String address,
-        Integer port,
-        boolean debug) {
+      NamingServerCryptographicManager crypto,
+      String service,
+      String qualifier,
+      String address,
+      Integer port,
+      boolean debug
+    ) {
       this.crypto = crypto;
       this.debug = debug;
       this.address = address;
@@ -99,9 +100,9 @@ public final class NamingService extends AbstractAuthServerService {
         throw new RuntimeException("Could not store client key");
 
     return super.diffieHellmanExchange(
-            crypto.buildSymmetricKeyPath(client),
-            crypto.buildIVPath(client),
-            clientPubEnc
+      crypto.buildSymmetricKeyPath(client),
+      crypto.buildIVPath(client),
+      clientPubEnc
     );
   }
 }

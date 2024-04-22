@@ -6,11 +6,7 @@ import pt.ulisboa.ist.sirs.authenticationserver.exceptions.*;
 
 import java.util.stream.Collectors;
 
-import com.google.api.Advice;
-import com.google.protobuf.Service;
-import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationService;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.NamingService;
-import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.NamingServerCryptographicManager;
 
 import java.util.*;
@@ -43,28 +39,8 @@ public class NamingServerState {
     }
 
   }
-  public final class ServerEntry {
-    private final String address;
-    private final Integer port;
-    private final String qualifier;
 
-    public ServerEntry(String address, Integer port, String qualifier) {
-      this.address = address;
-      this.port = port;
-      this.qualifier = qualifier;
-    }
-
-    public String getAddress() {
-      return address;
-    }
-
-    public Integer getPort() {
-      return port;
-    }
-
-    public String getQualifier() {
-      return qualifier;
-    }
+  public record ServerEntry(String address, Integer port, String qualifier) {
   }
 
   private boolean debug;
@@ -92,7 +68,7 @@ public class NamingServerState {
   }
 
   private void removeServerEntry(Types service, String qualifier) {
-    this.services.get(service).remove(this.services.get(service).get(qualifier));
+    this.services.get(service).remove(qualifier, this.services.get(service).get(qualifier));
   }
 
   private boolean checkServiceServerExists(Types service, String qualifier) {
@@ -134,9 +110,9 @@ public class NamingServerState {
     List<ServerEntry> s = getServerEntries(service);
     if (this.isDebug())
       System.err.println("\tNamingServerState: Found " + s.size() + " servers for service '" + service + "'");
-    if (s.size() == 0 || qualifier.equals(""))
+    if (s.isEmpty() || qualifier.isEmpty())
       return s;
-    s = s.stream().filter(e -> e.getQualifier().equals(qualifier)).collect(Collectors.toList());
+    s = s.stream().filter(e -> e.qualifier().equals(qualifier)).collect(Collectors.toList());
     if (this.isDebug())
       System.err.println("\tAdminService: Found " + s.size() + " matching servers for qualifier '" + qualifier + "'");
     return s;

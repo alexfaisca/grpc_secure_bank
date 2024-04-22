@@ -110,17 +110,18 @@ public class BankServer {
       Utils.writeBytesToFile(keyFactory.generatePrivate(keySpec).getEncoded(), Base.CryptographicCore.getPrivateKeyPath());
 
       BankServer server = new BankServer(
-          List.of(
-              System.getenv("service-name"),
-              System.getenv("server-name"),
-              System.getenv("server-address"),
-              System.getenv("server-port"),
-              System.getenv("database-address"),
-              System.getenv("database-port"),
-              System.getenv("path-server-trust-chain"),
-              System.getenv("path-server-cert"),
-              System.getenv("path-server-key")),
-          debug);
+        List.of(
+          System.getenv("service-name"),
+          System.getenv("server-name"),
+          System.getenv("server-address"),
+          System.getenv("server-port"),
+          System.getenv("database-address"),
+          System.getenv("database-port"),
+          System.getenv("path-server-trust-chain"),
+          System.getenv("path-server-cert"),
+          System.getenv("path-server-key")),
+          debug
+      );
       server.serverStartup();
       server.blockUntilShutDown();
     } catch (IOException | InterruptedException e) {

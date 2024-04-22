@@ -3,7 +3,6 @@ package pt.ulisboa.ist.sirs.authenticationserver.domain;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationService;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
-import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer;
 
 import java.time.OffsetDateTime;
 

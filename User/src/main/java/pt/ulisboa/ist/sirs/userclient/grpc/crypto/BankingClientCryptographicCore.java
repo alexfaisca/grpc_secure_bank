@@ -3,8 +3,6 @@ package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
 import com.google.protobuf.ByteString;
 import pt.ulisboa.ist.sirs.contract.bankserver.BankServer.*;
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Base.CryptographicCore.Decrypter;
-import pt.ulisboa.ist.sirs.cryptology.Base.CryptographicCore.Encrypter;
 import pt.ulisboa.ist.sirs.utils.*;
 
 public abstract class BankingClientCryptographicCore implements Base.CryptographicCore {

@@ -19,7 +19,7 @@ import java.util.Arrays;
 
 public abstract class AbstractAuthServerService {
   public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(
-          String symmetricKeyPath, String IVPath, byte[] clientPubEnc
+    String symmetricKeyPath, String IVPath, byte[] clientPubEnc
   ) throws Exception {
     KeyFactory serverKeyFac = KeyFactory.getInstance("DH");
     X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(clientPubEnc);

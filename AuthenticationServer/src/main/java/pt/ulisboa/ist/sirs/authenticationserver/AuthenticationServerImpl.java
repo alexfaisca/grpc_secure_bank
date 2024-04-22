@@ -29,8 +29,9 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
   }
 
   @Override
-  public void diffieHellmanExchange(DiffieHellmanExchangeRequest request,
-      StreamObserver<DiffieHellmanExchangeResponse> responseObserver) {
+  public void diffieHellmanExchange(
+    DiffieHellmanExchangeRequest request, StreamObserver<DiffieHellmanExchangeResponse> responseObserver
+  ) {
     try {
       request = crypto.decrypt(request);
 
@@ -49,7 +50,9 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
   }
 
   @Override
-  public void authenticate(AuthenticateRequest request, StreamObserver<AuthenticateResponse> responseObserver) {
+  public void authenticate(
+    AuthenticateRequest request, StreamObserver<AuthenticateResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: deserialize and parse request");

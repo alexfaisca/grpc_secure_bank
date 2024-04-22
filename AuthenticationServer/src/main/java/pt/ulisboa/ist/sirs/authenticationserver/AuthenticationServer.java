@@ -10,18 +10,12 @@ import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.io.*;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Base64;
 import java.util.List;
 import java.util.Scanner;
-import java.util.regex.Pattern;
 
 public class AuthenticationServer {
   private final boolean debug;
@@ -118,15 +112,15 @@ public class AuthenticationServer {
       Utils.writeBytesToFile(keyFactory.generatePrivate(keySpec).getEncoded(), Base.CryptographicCore.getPrivateKeyPath());
 
       AuthenticationServer server = new AuthenticationServer(
-          List.of(
-              System.getenv("service-name"),
-              System.getenv("server-name"),
-              System.getenv("server-address"),
-              System.getenv("server-port"),
-              System.getenv("path-server-cert"),
-              System.getenv("path-server-key")),
-          debug);
-
+        List.of(
+          System.getenv("service-name"),
+          System.getenv("server-name"),
+          System.getenv("server-address"),
+          System.getenv("server-port"),
+          System.getenv("path-server-cert"),
+          System.getenv("path-server-key")),
+          debug
+      );
 
       server.serverStartup();
       server.blockUntilShutDown();

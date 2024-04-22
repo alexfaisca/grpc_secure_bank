@@ -13,9 +13,7 @@ import java.io.File;
 import java.io.IOException;
 
 public class BankService {
-
   public static class BankServiceBuilder {
-
     private final boolean debug;
     private final String address;
     private final Integer port;
@@ -24,16 +22,17 @@ public class BankService {
     private final DatabaseServiceBlockingStub stub;
 
     public BankServiceBuilder(
-        String service,
-        String qualifier,
-        String address,
-        Integer port,
-        String databaseHost,
-        Integer databasePort,
-        String trustChainPath,
-        String certPath,
-        String connectionKeyPath,
-        boolean debug) throws IOException {
+      String service,
+      String qualifier,
+      String address,
+      Integer port,
+      String databaseHost,
+      Integer databasePort,
+      String trustChainPath,
+      String certPath,
+      String connectionKeyPath,
+      boolean debug
+    ) throws IOException {
       this.debug = debug;
       this.address = address;
       this.port = port;
@@ -49,7 +48,6 @@ public class BankService {
           credentials).build();
       this.stub = DatabaseServiceGrpc.newBlockingStub(channel);
     }
-
     public BankService build() {
       return new BankService(this);
     }

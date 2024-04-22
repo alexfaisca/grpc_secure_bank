@@ -21,9 +21,10 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public final class Operations {
-  public static byte[] encryptData(SecretKey secretKey, byte[] message, byte[] iv)
-      throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
-      BadPaddingException, InvalidAlgorithmParameterException {
+  public static byte[] encryptData(
+    SecretKey secretKey, byte[] message, byte[] iv
+  ) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+  BadPaddingException, InvalidAlgorithmParameterException {
     IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -32,9 +33,10 @@ public final class Operations {
     return cipher.doFinal(message);
   }
 
-  public static byte[] decryptData(SecretKey secretKey, byte[] cipherText, byte[] iv)
-      throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
-      BadPaddingException, InvalidAlgorithmParameterException {
+  public static byte[] decryptData(
+    SecretKey secretKey, byte[] cipherText, byte[] iv
+  ) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+  BadPaddingException, InvalidAlgorithmParameterException {
     IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -43,29 +45,34 @@ public final class Operations {
     return cipher.doFinal(cipherText);
   }
 
-  public static byte[] encryptDataAsymmetric(PublicKey secretKey, byte[] message)
-      throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
-      BadPaddingException {
+  public static byte[] encryptDataAsymmetric(
+    PublicKey secretKey, byte[] message
+  ) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+  BadPaddingException {
     Cipher cipher = Cipher.getInstance("RSA");
     cipher.init(Cipher.ENCRYPT_MODE, secretKey);
     return cipher.doFinal(message);
   }
 
-  public static byte[] decryptDataAsymmetric(PrivateKey secretKey, byte[] cipherText)
-      throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
-      BadPaddingException {
+  public static byte[] decryptDataAsymmetric(
+    PrivateKey secretKey, byte[] cipherText
+  ) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
+  BadPaddingException {
     Cipher cipher = Cipher.getInstance("RSA");
     cipher.init(Cipher.DECRYPT_MODE, secretKey);
     return cipher.doFinal(cipherText);
   }
 
-  public static byte[] hash(byte[] message) throws NoSuchAlgorithmException {
+  public static byte[] hash(
+    byte[] message
+  ) throws NoSuchAlgorithmException {
     final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
     return messageDigest.digest(message);
   }
 
-  public static byte[] messageSignature(PrivateKey privateKey, byte[] message)
-      throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
+  public static byte[] messageSignature(
+    PrivateKey privateKey, byte[] message
+  ) throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
     byte[] digest = MessageDigest.getInstance("SHA-256").digest(message);
 
     Signature signature = Signature.getInstance("SHA256withRSA");
@@ -75,8 +82,9 @@ public final class Operations {
     return signature.sign();
   }
 
-  public static boolean messageValidation(PublicKey publicKey, byte[] message, byte[] messageSignature)
-      throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
+  public static boolean messageValidation(
+    PublicKey publicKey, byte[] message, byte[] messageSignature
+  ) throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
     byte[] digest = MessageDigest.getInstance("SHA-256").digest(message);
 
     Signature signature = Signature.getInstance("SHA256withRSA");
@@ -98,7 +106,9 @@ public final class Operations {
     return null;
   }
 
-  public static byte[] generateIV(Integer id, byte[] secretKey, String secret) {
+  public static byte[] generateIV(
+    Integer id, byte[] secretKey, String secret
+  ) {
     try {
       return Arrays.copyOf(
         encryptData(

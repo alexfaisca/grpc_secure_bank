@@ -20,7 +20,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void authenticate(AuthenticateRequest request, StreamObserver<AuthenticateResponse> responseObserver) {
+  public void authenticate(
+    AuthenticateRequest request, StreamObserver<AuthenticateResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: parse and delegate request");
@@ -37,7 +39,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void stillAlive(StillAliveRequest request, StreamObserver<StillAliveResponse> responseObserver) {
+  public void stillAlive(
+    StillAliveRequest request, StreamObserver<StillAliveResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: parse and delegate request");
@@ -54,7 +58,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
+  public void createAccount(
+    CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: decrypt deserialize parse request");
@@ -71,7 +77,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
+  public void deleteAccount(
+    DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: decrypt deserialize parse request");
@@ -88,7 +96,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
+  public void balance(
+    BalanceRequest request, StreamObserver<BalanceResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: decrypt deserialize parse request");
@@ -104,7 +114,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void addExpense(AddExpenseRequest request, StreamObserver<AddExpenseResponse> responseObserver) {
+  public void addExpense(
+    AddExpenseRequest request, StreamObserver<AddExpenseResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: decrypt deserialize parse request");
@@ -123,7 +135,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void getMovements(GetMovementsRequest request, StreamObserver<GetMovementsResponse> responseObserver) {
+  public void getMovements(
+    GetMovementsRequest request, StreamObserver<GetMovementsResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: decrypt deserialize parse request");
@@ -139,7 +153,9 @@ public final class BankServerImpl extends BankingServiceImplBase {
   }
 
   @Override
-  public void orderPayment(OrderPaymentRequest request, StreamObserver<OrderPaymentResponse> responseObserver) {
+  public void orderPayment(
+    OrderPaymentRequest request, StreamObserver<OrderPaymentResponse> responseObserver
+  ) {
     try {
       if (isDebug())
         System.out.println("\tBankServerImpl: decrypt deserialize parse request");

@@ -34,7 +34,9 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
   }
 
   @Override
-  public void initiateEncryptedKeyExchange(InitiateEncryptedKeyExchangeRequest request, StreamObserver<InitiateEncryptedKeyExchangeResponse> responseObserver) {
+  public void initiateEncryptedKeyExchange(
+    InitiateEncryptedKeyExchangeRequest request, StreamObserver<InitiateEncryptedKeyExchangeResponse> responseObserver
+  ) {
     try {
       responseObserver.onNext(InitiateEncryptedKeyExchangeResponse.newBuilder().setServerCert(
       ByteString.copyFrom(
@@ -48,7 +50,9 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
   }
 
   @Override
-  public void encryptedKeyExchange(EncryptedKeyExchangeRequest request, StreamObserver<EncryptedKeyExchangeResponse> responseObserver) {
+  public void encryptedKeyExchange(
+    EncryptedKeyExchangeRequest request, StreamObserver<EncryptedKeyExchangeResponse> responseObserver
+  ) {
     try {
       String client = crypto.getEKEClientHash();
       CertificateFactory certGen = CertificateFactory.getInstance("X.509");
@@ -96,7 +100,9 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
   }
 
   @Override
-  public void encryptedKeyExchangeChallenge(EncryptedKeyExchangeChallengeRequest request, StreamObserver<EncryptedKeyExchangeChallengeResponse> responseObserver) {
+  public void encryptedKeyExchangeChallenge(
+    EncryptedKeyExchangeChallengeRequest request, StreamObserver<EncryptedKeyExchangeChallengeResponse> responseObserver
+  ) {
     try {
       String client = crypto.getEKEChallengeClientHash();
       JsonObject finJson = Utils.deserializeJson(Operations.decryptData(
