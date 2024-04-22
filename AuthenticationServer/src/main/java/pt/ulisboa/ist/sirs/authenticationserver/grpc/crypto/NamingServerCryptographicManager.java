@@ -10,6 +10,7 @@ import java.util.Map;
 public class NamingServerCryptographicManager extends NamingServerCryptographicCore {
   private final ServerCryptographicInterceptor crypto;
   private final Map<String, Integer> nonces = new HashMap<>();
+  private static final String CLIENT_CACHE_DIR = "resources/crypto/server/";
 
   public NamingServerCryptographicManager(ServerCryptographicInterceptor crypto) {
       this.crypto = crypto;
@@ -24,30 +25,26 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
   }
 
   public void initializeClientCache(String client) {
-    File clientDirectory = new File("resources/crypto/server/" + client + "/");
+    File clientDirectory = new File(CLIENT_CACHE_DIR + client + "/");
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
         throw new RuntimeException("Could not store client key");
   }
 
   public String buildSymmetricKeyPath(String client) {
-      return "resources/crypto/server/" + client + "/symmetricKey";
+      return CLIENT_CACHE_DIR + client + "/symmetricKey";
   }
 
   public String buildIVPath(String client) {
-      return "resources/crypto/server/" + client + "/iv";
+      return CLIENT_CACHE_DIR + client + "/iv";
   }
 
   public String buildPublicKeyPath(String client) {
-      return "resources/crypto/server/" + client + "/publicKey";
+      return CLIENT_CACHE_DIR + client + "/publicKey";
   }
 
-  public String getEKEClientHash() {
-      return crypto.getFromQueue(EncryptedKeyExchangeRequest.class);
-  }
-
-  public String getEKEChallengeClientHash() {
-    return crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class);
+  public <Req> String getClientHash(Req request) {
+    return crypto.getClientHash(request);
   }
 
   public void setNonce(Integer nonce) {
@@ -76,7 +73,7 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
   }
 
   public RegisterResponse encrypt(RegisterResponse object) throws Exception {
-    crypto.popFromQueue(RegisterRequest.class);
+    crypto.getFromQueue(RegisterRequest.class);
     return object;
   }
 
@@ -85,7 +82,7 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
   }
 
   public LookupResponse encrypt(LookupResponse object) throws Exception {
-    String client = crypto.popFromQueue(LookupRequest.class);
+    String client = crypto.getFromQueue(LookupRequest.class);
     return encrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 
@@ -95,7 +92,7 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
   }
 
   public DeleteResponse encrypt(DeleteResponse object) throws Exception {
-    String client = crypto.popFromQueue(DeleteRequest.class);
+    String client = crypto.getFromQueue(DeleteRequest.class);
     return encrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 

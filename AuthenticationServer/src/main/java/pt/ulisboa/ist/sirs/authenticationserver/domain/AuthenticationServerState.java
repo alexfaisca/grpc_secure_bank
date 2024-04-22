@@ -68,11 +68,11 @@ public class AuthenticationServerState {
     return debug;
   }
 
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc) {
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc, String client) {
     if (isDebug())
-      System.out.printf("\t\tAuthenticationServerState: diffieHellman initiate\n");
+      System.out.println("\t\tAuthenticationServerState: diffieHellman initiate\n");
     try {
-      return service.diffieHellmanExchange(pubKeyEnc);
+      return service.diffieHellmanExchange(pubKeyEnc, client);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -88,6 +88,8 @@ public class AuthenticationServerState {
       throw new RuntimeException(e);
     }
   }
+
+
 
   public void register() {
     service.register();

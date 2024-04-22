@@ -40,7 +40,7 @@ public class NamingServerState {
 
   }
 
-  public record ServerEntry(String address, Integer port, String qualifier) {
+  public record ServerEntry(String server, String address, Integer port, String qualifier) {
   }
 
   private boolean debug;
@@ -75,38 +75,45 @@ public class NamingServerState {
     return services.get(service).containsKey(qualifier);
   }
 
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc) {
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc, String client) {
     if (isDebug())
-      System.out.printf("\t\tAuthenticationServerState: diffieHellman initiate\n");
+      System.out.println("\t\tAuthenticationServerState: diffieHellman initiate\n");
     try {
-      return namingService.diffieHellmanExchange(pubKeyEnc);
+      return namingService.diffieHellmanExchange(pubKeyEnc, client);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  private void addServerEntry(Types service, String address, Integer port, String qualifier) {
+  private void addServerEntry(Types service, String server, String address, Integer port, String qualifier) {
     if (!this.checkServiceServerExists(service, qualifier)) {
       if (this.isDebug())
         System.err.println("\t\tNamingServerState: Creating '" + service + "' service: '" + qualifier + "'");
-      this.services.get(service).put(qualifier, new ServerEntry(address, port, qualifier));
+      this.services.get(service).put(qualifier, new ServerEntry(server, address, port, qualifier));
     } else {
       if (this.isDebug())
         System.err.println("\t\tNamingServerState: '" + service + "' already exists.");
     }
   }
 
-  public void register(Types service, String address, Integer port, String qualifier)
+  public void register(Types service, String server, String address, Integer port, String qualifier)
       throws CannotRegisterServerException {
     if (!this.checkServiceServerExists(service, qualifier))
-      this.addServerEntry(service, address, port, qualifier);
+      this.addServerEntry(service, server, address, port, qualifier);
     if (this.isDebug())
       System.err.println(
           "\t\tNamingServerState: Adding '" + qualifier + "' at '" + address + "' to '" + service + "' service");
-    this.getServerEntries(service).add(new ServerEntry(address, port, qualifier));
+    this.getServerEntries(service).add(new ServerEntry(server, address, port, qualifier));
   }
 
-  public List<ServerEntry> lookup(Types service, String qualifier) {
+  public List<ServerEntry> lookupServiceServers(Types service) {
+    List<ServerEntry> s = getServerEntries(service);
+    if (this.isDebug())
+      System.err.println("\tNamingServerState: Found " + s.size() + " servers for service '" + service + "'");
+    return s;
+  }
+
+  public List<ServerEntry> lookupServer(Types service, String qualifier) {
     List<ServerEntry> s = getServerEntries(service);
     if (this.isDebug())
       System.err.println("\tNamingServerState: Found " + s.size() + " servers for service '" + service + "'");

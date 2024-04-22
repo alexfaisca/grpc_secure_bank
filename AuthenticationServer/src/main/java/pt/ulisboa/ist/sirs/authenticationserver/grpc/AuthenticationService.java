@@ -97,8 +97,7 @@ public final class AuthenticationService extends AbstractAuthServerService {
     addTimestamp(client, timestamp);
   }
 
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc) throws Exception {
-    String client = crypto.getDHClientHash();
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {
     crypto.initializeClientCache(client);
     return super.diffieHellmanExchange(
       crypto.buildSymmetricKeyPath(client),

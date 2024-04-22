@@ -28,7 +28,7 @@ public class DatabaseServerCryptographicInterceptor implements ServerInterceptor
             ServerCall<ReqT, RespT> call,
             final Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
-        pendingAttributes.add(Utils.byteToHex(Objects.requireNonNull(call.getAttributes().get(Grpc.TRANSPORT_ATTR_LOCAL_ADDR)).toString().getBytes()));
+        pendingAttributes.add(Utils.byteToHex(Objects.requireNonNull(call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes()));
         logger.info("header received from client:" + headers);
         // For now nothing to do here
         ServerCall<ReqT, RespT> wrapperCall =

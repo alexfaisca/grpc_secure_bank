@@ -33,10 +33,11 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
     DiffieHellmanExchangeRequest request, StreamObserver<DiffieHellmanExchangeResponse> responseObserver
   ) {
     try {
+      String client = crypto.getClientHash(request);
       request = crypto.decrypt(request);
 
       DiffieHellmanExchangeParameters params = state.diffieHellmanExchange(
-        request.getClientPublic().toByteArray()
+        request.getClientPublic().toByteArray(), client
       );
 
       responseObserver.onNext(crypto.encrypt(DiffieHellmanExchangeResponse.newBuilder()
@@ -56,7 +57,7 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
     try {
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: deserialize and parse request");
-      String client = crypto.getASClientHash();
+      String client = crypto.getClientHash(request);
       JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
       String source = requestJson.getString("source");
       String target = requestJson.getString("target");

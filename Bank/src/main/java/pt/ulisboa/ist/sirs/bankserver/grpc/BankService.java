@@ -93,7 +93,8 @@ public class BankService {
     if (isDebug())
       System.out.println("\t\t\tBankService: call authentication stub");
     AuthenticateResponse authenticateResponse = stub.authenticate(AuthenticateRequest.newBuilder().setRequest(
-        ByteString.copyFrom(request)).build());
+      ByteString.copyFrom(request)).build()
+    );
     if (isDebug())
       System.out.println("\t\t\tBankService: return response");
     return authenticateResponse.getResponse().toByteArray();
@@ -103,7 +104,8 @@ public class BankService {
     if (isDebug())
       System.out.println("\t\t\tBankService: call authentication stub");
     StillAliveResponse stillAliveResponse = stub.stillAlive(StillAliveRequest.newBuilder().setRequest(
-        ByteString.copyFrom(request)).build());
+      ByteString.copyFrom(request)).build()
+    );
     if (isDebug())
       System.out.println("\t\t\tBankService: return response");
     return stillAliveResponse.getResponse().toByteArray();
@@ -121,14 +123,16 @@ public class BankService {
     if (isDebug())
       System.out.println("\t\t\tBankService: parse serialize and encrypt request");
     DeleteAccountResponse ignored = stub.deleteAccount(DeleteAccountRequest.newBuilder().setRequest(
-        ByteString.copyFrom(request)).build());
+      ByteString.copyFrom(request)).build()
+    );
   }
 
   public synchronized byte[] balance(byte[] request) {
     if (isDebug())
       System.out.println("\t\t\tBankService: parse serialize and encrypt request");
     BalanceResponse balanceResponse = stub.balance(BalanceRequest.newBuilder().setRequest(
-        ByteString.copyFrom(request)).build());
+      ByteString.copyFrom(request)).build()
+    );
 
     if (isDebug())
       System.out.println("\t\t\tBankService: decrypt deserialize response");
@@ -139,14 +143,16 @@ public class BankService {
     if (isDebug())
       System.out.println("\t\t\tBankService: parse serialize and encrypt request");
     AddExpenseResponse ignored = stub.addExpense(AddExpenseRequest.newBuilder().setRequest(
-        ByteString.copyFrom(request)).build());
+      ByteString.copyFrom(request)).build()
+    );
   }
 
   public synchronized byte[] getMovements(byte[] request) {
     if (isDebug())
       System.out.println("\t\t\tBankService: parse serialize and encrypt request");
     GetMovementsResponse getMovementsResponse = stub.getMovements(GetMovementsRequest.newBuilder().setRequest(
-        ByteString.copyFrom(request)).build());
+      ByteString.copyFrom(request)).build()
+    );
 
     if (isDebug())
       System.out.println("\t\t\tBankService: decrypt deserialize response");
@@ -157,7 +163,8 @@ public class BankService {
     if (isDebug())
       System.out.println("\t\t\tBankService: parse serialize and encrypt request");
     OrderPaymentResponse ignored = stub.orderPayment(OrderPaymentRequest.newBuilder().setRequest(
-        ByteString.copyFrom(request)).build());
+      ByteString.copyFrom(request)).build()
+    );
   }
 
   public void register() {

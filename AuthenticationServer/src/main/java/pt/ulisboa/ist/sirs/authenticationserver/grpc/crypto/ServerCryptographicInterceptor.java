@@ -4,23 +4,31 @@ import io.grpc.*;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.util.*;
-import java.util.logging.Logger;
 
 public class ServerCryptographicInterceptor implements ServerInterceptor {
-  List<String> pendingAttributes = new ArrayList<>();
+  private static final class ClassWizard<T> {
+    private final Class<T> type;
+    public ClassWizard(Class<T> m) {
+      this.type = m;
+    }
+    public Class<T> get() {
+      return this.type;
+    }
+  }
   Map<Class, List<String>> queue = new HashMap<>();
-  private static final Logger logger = Logger.getLogger(ServerCryptographicInterceptor.class.getName());
 
-  public boolean idQueued(Class requestClass) {
-      return !queue.get(requestClass).isEmpty();
+  private boolean isNotQueued(Class requestClass) {
+      return queue.get(requestClass).isEmpty();
   }
 
   public String getFromQueue(Class requestClass) {
       return queue.get(requestClass).get(0);
   }
 
-  public String popFromQueue(Class requestClass) {
-    return queue.get(requestClass).remove(0);
+  public <ReqT> String getClientHash(ReqT request) {
+    if (isNotQueued(request.getClass()))
+      throw new RuntimeException();
+    return getFromQueue(request.getClass());
   }
 
   @Override
@@ -29,8 +37,6 @@ public class ServerCryptographicInterceptor implements ServerInterceptor {
     final Metadata headers,
     ServerCallHandler<ReqT, RespT> next
   ) {
-    pendingAttributes.add(Utils.byteToHex(Objects.requireNonNull(call.getAttributes().get(Grpc.TRANSPORT_ATTR_LOCAL_ADDR)).toString().getBytes()));
-    logger.info("header received from client:" + headers);
     // For now nothing to do here
     ServerCall<ReqT, RespT> wrapperCall =
       new ForwardingServerCall.SimpleForwardingServerCall<>(call) {
@@ -53,14 +59,39 @@ public class ServerCryptographicInterceptor implements ServerInterceptor {
     };
     ServerCall.Listener<ReqT> listener = next.startCall(wrapperCall, headers);
     return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(listener) {
+      private Class clazz;
+      private boolean cached = false;
+      private void cacheClient(ReqT m) {
+        clazz = new ClassWizard<>(m.getClass()).get();
+        System.out.println(call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR));
+        String addressHash = Utils.byteToHex(Objects.requireNonNull(
+          call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes()
+        );
+        if (queue.get(clazz) == null) {
+          ArrayList<String> list = new ArrayList<>();
+          list.add(addressHash);
+          queue.put(clazz, list);
+        } else queue.get(clazz).add(addressHash);
+        cached = true;
+      }
+      private void clearCache() {
+        if (cached) queue.get(clazz).remove(0);
+        cached = false;
+      }
       @Override
       public void onMessage(ReqT message) {
-        if (queue.get(message.getClass()) == null) {
-          ArrayList<String> list = new ArrayList<>();
-          list.add(pendingAttributes.remove(0));
-          queue.put(message.getClass(), list);
-        } else queue.get(message.getClass()).add(pendingAttributes.remove(0));
+        cacheClient(message);
         listener.onMessage(message);
+      }
+      @Override
+      public void onCancel() {
+        clearCache();
+        super.onCancel();
+      }
+      @Override
+      public void onComplete() {
+        clearCache();
+        super.onComplete();
       }
     };
   }

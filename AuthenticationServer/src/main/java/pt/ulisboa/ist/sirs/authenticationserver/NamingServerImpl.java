@@ -44,7 +44,7 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       )).build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println(e.getMessage());
       responseObserver.onError(new RuntimeException(e.getMessage()));
     }
   }
@@ -54,7 +54,7 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
     EncryptedKeyExchangeRequest request, StreamObserver<EncryptedKeyExchangeResponse> responseObserver
   ) {
     try {
-      String client = crypto.getEKEClientHash();
+      String client = crypto.getClientHash(request);
       CertificateFactory certGen = CertificateFactory.getInstance("X.509");
       X509Certificate cert = (X509Certificate) certGen.generateCertificate(
         new ByteArrayInputStream(request.getClientCert().toByteArray())
@@ -72,9 +72,9 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       byte[] ephemeralKey = Arrays.copyOfRange(keyIVConcat, 0, 32);
       byte[] ephemeralIV = Arrays.copyOfRange(keyIVConcat, 32, 48);
       SecretKey secretKey = new SecretKeySpec(ephemeralKey, "AES");
-      DiffieHellmanExchangeParameters parameters = state.diffieHellmanExchange(Operations.decryptData(
-        secretKey, request.getClientParams().toByteArray(), ephemeralIV
-      ));
+      DiffieHellmanExchangeParameters parameters = state.diffieHellmanExchange(
+        Operations.decryptData(secretKey, request.getClientParams().toByteArray(), ephemeralIV), client
+      );
 
       int random = Base.generateRandom(Integer.MAX_VALUE).intValue();
       crypto.setNonce(random);
@@ -94,7 +94,7 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       ))).build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println(e.getMessage());
       responseObserver.onError(new RuntimeException(e.getMessage()));
     }
   }
@@ -104,7 +104,7 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
     EncryptedKeyExchangeChallengeRequest request, StreamObserver<EncryptedKeyExchangeChallengeResponse> responseObserver
   ) {
     try {
-      String client = crypto.getEKEChallengeClientHash();
+      String client = crypto.getClientHash(request);
       JsonObject finJson = Utils.deserializeJson(Operations.decryptData(
         Base.readSecretKey(crypto.buildSymmetricKeyPath(client)),
         request.getFinalizeClient().toByteArray(),
@@ -122,7 +122,17 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       ))).build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      e.printStackTrace();
+      System.out.println(e.getMessage());
+      responseObserver.onError(new RuntimeException(e.getMessage()));
+    }
+  }
+
+  @Override
+  public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {
+    try {
+      String client = crypto.getClientHash(request);
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
       responseObserver.onError(new RuntimeException(e.getMessage()));
     }
   }

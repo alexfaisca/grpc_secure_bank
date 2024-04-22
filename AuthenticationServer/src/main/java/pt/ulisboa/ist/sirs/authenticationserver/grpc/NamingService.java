@@ -92,8 +92,7 @@ public final class NamingService extends AbstractAuthServerService {
     addTimestamp(client, timestamp);
   }
 
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc) throws Exception {
-    String client = crypto.getEKEClientHash();
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {
     File clientDirectory = new File("resources/crypto/server/" + client + "/");
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())

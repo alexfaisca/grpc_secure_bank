@@ -6,6 +6,7 @@ import java.io.File;
 
 public class AuthenticationServerCryptographicManager extends AuthenticationServerCryptographicCore {
   private final ServerCryptographicInterceptor crypto;
+  private static final String CLIENT_CACHE_DIR = "resources/crypto/";
 
   public AuthenticationServerCryptographicManager(ServerCryptographicInterceptor crypto) {
       this.crypto = crypto;
@@ -21,26 +22,22 @@ public class AuthenticationServerCryptographicManager extends AuthenticationServ
   }
 
   public void initializeClientCache(String client) {
-    File clientDirectory = new File("resources/crypto/" + client + "/");
+    File clientDirectory = new File(CLIENT_CACHE_DIR + client + "/");
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
         throw new RuntimeException("Could not store client key");
   }
 
   public String buildSymmetricKeyPath(String client) {
-      return "resources/crypto/" + client + "/symmetricKey";
+      return CLIENT_CACHE_DIR + client + "/symmetricKey";
   }
 
   public String buildIVPath(String client) {
-      return "resources/crypto/" + client + "/iv";
+      return CLIENT_CACHE_DIR + client + "/iv";
   }
 
-  public String getDHClientHash() {
-      return crypto.getFromQueue(DiffieHellmanExchangeRequest.class);
-  }
-
-  public String getASClientHash() {
-      return crypto.getFromQueue(AuthenticateRequest.class);
+  public <Req> String getClientHash(Req request) {
+      return crypto.getClientHash(request);
   }
 
   public <P> P encrypt(P object) throws Exception {
@@ -52,7 +49,7 @@ public class AuthenticationServerCryptographicManager extends AuthenticationServ
   }
 
   public DiffieHellmanExchangeResponse encrypt(DiffieHellmanExchangeResponse object) throws Exception {
-    crypto.popFromQueue(DiffieHellmanExchangeRequest.class);
+    crypto.getFromQueue(DiffieHellmanExchangeRequest.class);
     return object;
   }
 
@@ -61,7 +58,7 @@ public class AuthenticationServerCryptographicManager extends AuthenticationServ
   }
 
   public AuthenticateResponse encrypt(AuthenticateResponse object) throws Exception {
-    String client = crypto.popFromQueue(AuthenticateRequest.class);
+    String client = crypto.getFromQueue(AuthenticateRequest.class);
     return encrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 
