@@ -63,7 +63,6 @@ public class ServerCryptographicInterceptor implements ServerInterceptor {
       private boolean cached = false;
       private void cacheClient(ReqT m) {
         clazz = new ClassWizard<>(m.getClass()).get();
-        System.out.println(call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR));
         String addressHash = Utils.byteToHex(Objects.requireNonNull(
           call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes()
         );

@@ -31,6 +31,11 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
         throw new RuntimeException("Could not store client key");
   }
 
+  public boolean checkServerCache(String client) {
+    File clientDirectory = new File(CLIENT_CACHE_DIR + client + "/");
+    return clientDirectory.exists();
+  }
+
   public String buildSymmetricKeyPath(String client) {
       return CLIENT_CACHE_DIR + client + "/symmetricKey";
   }
@@ -73,12 +78,13 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
   }
 
   public RegisterResponse encrypt(RegisterResponse object) throws Exception {
-    crypto.getFromQueue(RegisterRequest.class);
+    String client = crypto.getFromQueue(RegisterRequest.class);
     return object;
   }
 
   public RegisterRequest decrypt(RegisterRequest object) throws Exception {
-    return object;
+    String client = crypto.getFromQueue(RegisterRequest.class);
+    return decrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 
   public LookupResponse encrypt(LookupResponse object) throws Exception {

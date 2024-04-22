@@ -1,9 +1,11 @@
 package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 
 import com.google.protobuf.ByteString;
+import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
@@ -71,12 +73,14 @@ public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
         Base.readPublicKey(publicKeyPath),
         Base.readIv(ivPath));
   }
-
+  @SuppressWarnings(value = "all")
+  @Deprecated
   protected static boolean check(AddExpenseRequest message,
       String secretKeyPath, String publicKeyPath, String ivPath) throws Exception {
     return true;
   }
-
+  @SuppressWarnings(value = "all")
+  @Deprecated
   protected static boolean check(OrderPaymentRequest message,
       String secretKeyPath, String publicKeyPath, String ivPath) throws Exception {
     return true;
@@ -145,9 +149,19 @@ public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
         .build();
   }
 
-  protected static AuthenticateResponse encrypt(AuthenticateResponse message,
+  protected static DatabaseServer.AuthenticateRequest decrypt(DatabaseServer.AuthenticateRequest message,
+      String secretKeyPath, String ivPath) throws Exception {
+    return DatabaseServer.AuthenticateRequest.newBuilder().setRequest(
+      ByteString.copyFrom(Operations.decryptData(
+        Base.readSecretKey(secretKeyPath),
+        message.getRequest().toByteArray(),
+        Base.readIv(ivPath)
+      ))).build();
+  }
+
+  protected static DatabaseServer.AuthenticateResponse encrypt(DatabaseServer.AuthenticateResponse message,
       String secretKeyPath, String privateKeyPath, String ivPath) throws Exception {
-    return AuthenticateResponse.newBuilder().setResponse(
+    return DatabaseServer.AuthenticateResponse.newBuilder().setResponse(
         ByteString.copyFrom(
             Encrypter.encrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath),
                 Base.readPrivateKey(privateKeyPath), Base.readIv(ivPath))))

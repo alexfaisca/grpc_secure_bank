@@ -13,12 +13,12 @@ public class AuthenticationServerCryptographicManager extends AuthenticationServ
   }
 
   // For now database symmetricKey and iv are distributed prior to application initialization, hence are static files
-  public String getDatabaseSymmetricKeyPath(String database) {
-      return "resources/crypto/database/symmetricKey";
+  public String getTargetServerSymmetricKeyPath(String server) {
+      return "resources/crypto/server/" + server + "/symmetricKey";
   }
 
-  public String getDatabaseIVPath(String database) {
-      return "resources/crypto/database/iv";
+  public String getTargetServerIVPath(String server) {
+      return "resources/crypto/server/" + server + "/iv";
   }
 
   public void initializeClientCache(String client) {

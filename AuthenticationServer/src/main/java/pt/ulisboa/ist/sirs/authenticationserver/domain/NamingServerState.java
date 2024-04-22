@@ -43,7 +43,7 @@ public class NamingServerState {
   public record ServerEntry(String server, String address, Integer port, String qualifier) {
   }
 
-  private boolean debug;
+  private final boolean debug;
   private final NamingService namingService;
   Map<Types, Map<String, ServerEntry>> services;
 
@@ -61,6 +61,12 @@ public class NamingServerState {
 
   private List<ServerEntry> getServerEntries(Types service) {
     return new ArrayList<ServerEntry>(this.services.get(service).values());
+  }
+
+  public ServerEntry getServerEntry(Types service) throws ServiceHasNoRegisteredServersException {
+    return this.services.get(service).values().stream().findAny().orElseThrow(
+      () -> new ServiceHasNoRegisteredServersException(service.name())
+    );
   }
 
   private ServerEntry getServerEntry(Types service, String qualifier) {
@@ -96,8 +102,9 @@ public class NamingServerState {
     }
   }
 
-  public void register(Types service, String server, String address, Integer port, String qualifier)
-      throws CannotRegisterServerException {
+  public void register(
+    Types service, String server, String address, Integer port, String qualifier
+  ) throws CannotRegisterServerException {
     if (!this.checkServiceServerExists(service, qualifier))
       this.addServerEntry(service, server, address, port, qualifier);
     if (this.isDebug())
@@ -129,7 +136,7 @@ public class NamingServerState {
     if (this.checkServiceServerExists(service, qualifier)) {
       if (this.isDebug())
         System.err.println("\t\tNamingServerState: Deleting server '" + qualifier + "'");
-
+      removeServerEntry(service, qualifier);
     } else
       throw new CannotRemoveServerException(service.toString(), qualifier);
   }

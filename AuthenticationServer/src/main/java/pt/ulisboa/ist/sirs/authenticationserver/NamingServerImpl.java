@@ -3,6 +3,7 @@ package pt.ulisboa.ist.sirs.authenticationserver;
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.NamingServerState;
+import pt.ulisboa.ist.sirs.authenticationserver.domain.utils.ServiceTypesConverter;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.NamingServerCryptographicManager;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer.*;
@@ -44,7 +45,7 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       )).build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      System.out.println(e.getMessage());
+      if (debug) System.out.println(e.getMessage());
       responseObserver.onError(new RuntimeException(e.getMessage()));
     }
   }
@@ -94,7 +95,7 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       ))).build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      System.out.println(e.getMessage());
+      if (debug) System.out.println(e.getMessage());
       responseObserver.onError(new RuntimeException(e.getMessage()));
     }
   }
@@ -122,7 +123,8 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
       ))).build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      System.out.println(e.getMessage());
+      if (debug) System.out.println(e.getMessage());
+      e.printStackTrace();
       responseObserver.onError(new RuntimeException(e.getMessage()));
     }
   }
@@ -131,8 +133,42 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
   public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {
     try {
       String client = crypto.getClientHash(request);
+      if (!crypto.checkServerCache(client))
+        throw new RuntimeException("Please perform eke first.");
+      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
+
+      state.register(
+        ServiceTypesConverter.convert(Services.valueOf(requestJson.getString("service"))),
+        client,
+        requestJson.getString("address"),
+        Integer.parseInt(requestJson.getString("port")),
+        requestJson.getString("qualifier")
+      );
+
+      responseObserver.onNext(crypto.encrypt(RegisterResponse.getDefaultInstance()));
+      responseObserver.onCompleted();
     } catch (Exception e) {
-      System.out.println(e.getMessage());
+      if (debug) System.out.println(e.getMessage());
+      e.printStackTrace();
+      responseObserver.onError(new RuntimeException(e.getMessage()));
+    }
+  }
+
+  @Override
+  public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+    try {
+      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
+
+      state.delete(
+        ServiceTypesConverter.convert(Services.valueOf(requestJson.getString("service"))),
+        requestJson.getString("qualifier")
+      );
+
+      responseObserver.onNext(crypto.encrypt(DeleteResponse.getDefaultInstance()));
+      responseObserver.onCompleted();
+    } catch (Exception e) {
+      if (debug) System.out.println(e.getMessage());
+      e.printStackTrace();
       responseObserver.onError(new RuntimeException(e.getMessage()));
     }
   }

@@ -169,9 +169,11 @@ public class UserService {
               Base.readIv("resources/crypto/client/iv"))
       );
 
-      if (!ticketJson.getString("target").equals("database")
-          || !ticketJson.getString("timestampString").equals(timestampString))
+      if (!ticketJson.getString("timestampString").equals(timestampString))
         throw new TamperedMessageException();
+      String address = ticketJson.getString("address");
+      String qualifier = ticketJson.getString("qualifier");
+      Integer port = ticketJson.getInt("port");
       // Save session key and session iv
       File clientDirectory = new File("resources/crypto/session/");
       if (!clientDirectory.exists())
@@ -191,7 +193,7 @@ public class UserService {
               ByteString.copyFrom(
                   Utils.serializeJson(
                       Json.createObjectBuilder()
-                          .add("ticket", ticketJson.getJsonString("targetTicket"))
+                          .add("ticket", ticketJson.getString("targetTicket"))
                           .add("timestampString", timestampString)
                           .build())))
               .build());

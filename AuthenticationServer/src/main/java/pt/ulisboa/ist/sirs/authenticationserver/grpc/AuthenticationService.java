@@ -106,7 +106,9 @@ public final class AuthenticationService extends AbstractAuthServerService {
     );
   }
 
-  public synchronized byte[] authenticate(String source, String target, OffsetDateTime timestamp) throws Exception {
+  public synchronized byte[] authenticate(
+    String source, String qualifier, String target, String address, Integer port, OffsetDateTime timestamp
+  ) throws Exception {
     if (isDebug())
       System.out.printf("\t\t\tAuthenticationService: authenticating %s for %s\n", target, source);
     if (isDebug())
@@ -133,19 +135,21 @@ public final class AuthenticationService extends AbstractAuthServerService {
 
     return Utils.serializeJson(
       Json.createObjectBuilder()
-        .add("target", target)
+        .add("qualifier", qualifier)
+        .add("address", address)
+        .add("port", port)
         .add("timestampString", timestamp.toString())
         .add("sessionKey", sessionKeyHex)
         .add("sessionIv", sessionIvHex)
         .add("targetTicket", Utils.byteToHex(
           Operations.encryptData(
-            Base.readSecretKey(crypto.getDatabaseSymmetricKeyPath("")),
+            Base.readSecretKey(crypto.getTargetServerSymmetricKeyPath(target)),
             Utils.serializeJson(
               Json.createObjectBuilder()
               .add("source", source)
               .add("sessionKey", sessionKeyHex).add("sessionIv", sessionIvHex).build()
             ),
-            Base.readIv(crypto.getDatabaseIVPath("")))))
+            Base.readIv(crypto.getTargetServerIVPath(target)))))
         .build());
   }
 

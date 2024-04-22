@@ -61,12 +61,12 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
         throw new ReplayAttackException();
       addTimestamp(OffsetDateTime.parse(timestampString));
 
-      JsonObject ticketJson = Utils.deserializeJson(
-        Operations.decryptData(
-          Base.readSecretKey("resources/crypto/database/symmetricKey"),
-          Utils.hexToByte(authenticateJson.getString("ticket")),
-          Base.readIv("resources/crypto/database/iv")
+      JsonObject ticketJson = Utils.deserializeJson(Operations.decryptData(
+              Base.readSecretKey(crypto.buildAuthKeyPath()),
+              Utils.hexToByte(authenticateJson.getString("ticket")),
+              Base.readIv(crypto.buildAuthIVPath())
       ));
+
 
       if (!ticketJson.getString("source").equals("user"))
         throw new TamperedMessageException();

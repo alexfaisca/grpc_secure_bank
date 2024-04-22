@@ -1,5 +1,6 @@
 package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 
+import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
@@ -25,11 +26,19 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
     this.crypto = crypto;
   }
 
+  public String buildAuthKeyPath() {
+    return "resources/crypto/auth/symmetricKey";
+  }
+
+  public String buildAuthIVPath() {
+    return "resources/crypto/auth/iv";
+  }
+
   private String buildSessionKeyPath(String client) {
     return "resources/crypto/session/" + client + "/sessionKey";
   }
 
-  private String buildIVPath(String client) {
+  private String buildSessionIVPath(String client) {
     return "resources/crypto/session/" + client + "/iv";
   }
 
@@ -44,7 +53,7 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
       if (!clientDirectory.mkdirs())
         throw new RuntimeException("Could not store client key");
     Utils.writeBytesToFile(sessionKey, buildSessionKeyPath(client));
-    Utils.writeBytesToFile(iv, buildIVPath(client));
+    Utils.writeBytesToFile(iv, buildSessionIVPath(client));
   }
 
   public void setNonce(Integer nonce) {
@@ -85,19 +94,23 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
     return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
   }
 
+  public AuthenticateRequest decrypt(AuthenticateRequest object) throws Exception {
+    return decrypt(object, buildAuthKeyPath(), buildAuthIVPath());
+  }
+
   public AuthenticateResponse encrypt(AuthenticateResponse object) throws Exception {
     String client = crypto.popFromQueue(AuthenticateRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public StillAliveResponse encrypt(StillAliveResponse object) throws Exception {
     String client = crypto.popFromQueue(StillAliveRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public boolean check(StillAliveRequest object) throws Exception {
     String client = crypto.getFromQueue(StillAliveRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
       crypto.popFromQueue(StillAliveRequest.class);
       return false;
     }
@@ -106,17 +119,17 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
 
   public StillAliveRequest decrypt(StillAliveRequest object) throws Exception {
     String client = crypto.getFromQueue(StillAliveRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildIVPath(client));
+    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 
   public BalanceResponse encrypt(BalanceResponse object) throws Exception {
     String client = crypto.popFromQueue(BalanceRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public boolean check(BalanceRequest object) throws Exception {
     String client = crypto.getFromQueue(BalanceRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
       crypto.popFromQueue(BalanceRequest.class);
       return false;
     }
@@ -125,17 +138,17 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
 
   public BalanceRequest decrypt(BalanceRequest object) throws Exception {
     String client = crypto.getFromQueue(BalanceRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildIVPath(client));
+    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 
   public CreateAccountResponse encrypt(CreateAccountResponse object) throws Exception {
     String client = crypto.popFromQueue(CreateAccountRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public boolean check(CreateAccountRequest object) throws Exception {
     String client = crypto.getFromQueue(CreateAccountRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
       crypto.popFromQueue(BalanceRequest.class);
       return false;
     }
@@ -144,17 +157,17 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
 
   public CreateAccountRequest decrypt(CreateAccountRequest object) throws Exception {
     String client = crypto.getFromQueue(CreateAccountRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildIVPath(client));
+    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 
   public DeleteAccountResponse encrypt(DeleteAccountResponse object) throws Exception {
     String client = crypto.popFromQueue(DeleteAccountRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public boolean check(DeleteAccountRequest object) throws Exception {
     String client = crypto.getFromQueue(DeleteAccountRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
       crypto.popFromQueue(BalanceRequest.class);
       return false;
     }
@@ -163,17 +176,17 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
 
   public DeleteAccountRequest decrypt(DeleteAccountRequest object) throws Exception {
     String client = crypto.getFromQueue(DeleteAccountRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildIVPath(client));
+    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 
   public GetMovementsResponse encrypt(GetMovementsResponse object) throws Exception {
     String client = crypto.popFromQueue(GetMovementsRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public boolean check(GetMovementsRequest object) throws Exception {
     String client = crypto.getFromQueue(GetMovementsRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
       crypto.popFromQueue(BalanceRequest.class);
       return false;
     }
@@ -182,17 +195,17 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
 
   public GetMovementsRequest decrypt(GetMovementsRequest object) throws Exception {
     String client = crypto.getFromQueue(GetMovementsRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildIVPath(client));
+    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 
   public AddExpenseResponse encrypt(AddExpenseResponse object) throws Exception {
     String client = crypto.popFromQueue(AddExpenseRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public boolean check(AddExpenseRequest object) throws Exception {
     String client = crypto.getFromQueue(AddExpenseRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
       crypto.popFromQueue(BalanceRequest.class);
       return false;
     }
@@ -201,17 +214,17 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
 
   public AddExpenseRequest decrypt(AddExpenseRequest object) throws Exception {
     String client = crypto.getFromQueue(AddExpenseRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildIVPath(client));
+    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 
   public OrderPaymentResponse encrypt(OrderPaymentResponse object) throws Exception {
     String client = crypto.popFromQueue(OrderPaymentRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildIVPath(client));
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
   }
 
   public boolean check(OrderPaymentRequest object) throws Exception {
     String client = crypto.getFromQueue(OrderPaymentRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildIVPath(client))) {
+    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
       crypto.popFromQueue(BalanceRequest.class);
       return false;
     }
@@ -220,6 +233,6 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
 
   public OrderPaymentRequest decrypt(OrderPaymentRequest object) throws Exception {
     String client = crypto.getFromQueue(OrderPaymentRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildIVPath(client));
+    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 }

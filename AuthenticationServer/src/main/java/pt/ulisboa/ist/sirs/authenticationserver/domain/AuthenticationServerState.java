@@ -1,6 +1,7 @@
 package pt.ulisboa.ist.sirs.authenticationserver.domain;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.enums.Service;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationService;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 
@@ -78,12 +79,13 @@ public class AuthenticationServerState {
     }
   }
 
-  public synchronized byte[] authenticate(String source, String target, String client, OffsetDateTime timestamp) {
+  public synchronized byte[] authenticate(String source, String client, OffsetDateTime timestamp) {
     if (isDebug())
-      System.out.printf("\t\tAuthenticationServerState: authenticating %s for %s\n", target, source);
+      System.out.printf("\t\tAuthenticationServerState: authenticating %s\n", source);
     try {
       service.checkForReplayAttack(client, timestamp);
-      return service.authenticate(source, target, timestamp);
+      NamingServerState.ServerEntry target = namingServerState.getServerEntry(Service.Types.DatabaseServer);
+      return service.authenticate(source, target.qualifier(), target.server(), target.address(), target.port(), timestamp);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

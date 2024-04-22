@@ -37,4 +37,28 @@ public class NamingServerCryptographicCore implements Base.CryptographicCore {
           Base.readIv(ivPath))
     )).build();
   }
+
+  protected static DeleteRequest decrypt(
+          DeleteRequest message, String secretKeyPath, String ivPath
+  ) throws Exception {
+    return DeleteRequest.newBuilder().setRequest(
+      ByteString.copyFrom(
+        Operations.decryptData(
+          Base.readSecretKey(secretKeyPath),
+          message.getRequest().toByteArray(),
+          Base.readIv(ivPath))
+    )).build();
+  }
+
+  protected static DeleteResponse encrypt(
+          DeleteResponse message, String secretKeyPath, String ivPath
+  ) throws Exception {
+    return DeleteResponse.newBuilder().setResponse(
+      ByteString.copyFrom(
+        Operations.encryptData(
+          Base.readSecretKey(secretKeyPath),
+          message.getResponse().toByteArray(),
+          Base.readIv(ivPath))
+    )).build();
+  }
 }

@@ -78,13 +78,13 @@ public class DatabaseServer {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       try {
         serverShutdown();
-      } catch (InterruptedException e) {
+      } catch (Exception e) {
         System.out.println(e.getMessage());
       }
     }));
   }
 
-  private void serverShutdown() throws InterruptedException {
+  private void serverShutdown() throws Exception {
     if (debug)
       System.out.println("Database: Deleting '" + state.getService().getServerServiceName() + "''s '"
         + state.getService().getServerName() + "' server at " + state.getService().getServerAddress() + ":"
@@ -95,7 +95,7 @@ public class DatabaseServer {
     System.exit(0);
   }
 
-  private void blockUntilShutDown() throws InterruptedException {
+  private void blockUntilShutDown() throws Exception {
     System.out.println("Press ENTER to delete '" + state.getService().getServerServiceName() + "''s '"
       + state.getService().getServerName() + "' server.");
     try (Scanner scan = new Scanner(System.in)) {

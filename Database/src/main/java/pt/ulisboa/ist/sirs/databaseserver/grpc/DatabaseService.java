@@ -23,6 +23,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.List;
 
 public class DatabaseService {
   public static class DatabaseServiceBuilder {
@@ -60,7 +61,7 @@ public class DatabaseService {
               .build();
     }
 
-    public DatabaseService build() {
+    public DatabaseService build() throws Exception {
       this.namingServerChannel = Grpc.newChannelBuilderForAddress(
               this.namingServerAddress,
               this.namingServerPort,
@@ -76,7 +77,7 @@ public class DatabaseService {
   private final Integer port;
   private final AuthenticationClientCryptographicManager crypto;
   private final NamingServerServiceGrpc.NamingServerServiceBlockingStub stub;
-  public DatabaseService(DatabaseServiceBuilder builder) {
+  public DatabaseService(DatabaseServiceBuilder builder) throws Exception {
     this.debug = builder.debug;
     this.service = builder.service;
     this.qualifier = builder.qualifier;
@@ -85,6 +86,7 @@ public class DatabaseService {
     this.crypto = builder.crypto;
     this.stub = NamingServerServiceGrpc.newBlockingStub(builder.namingServerChannel);
     this.encryptedKeyExchange();
+    this.register();
   }
 
   public String getServerServiceName() {
@@ -106,8 +108,6 @@ public class DatabaseService {
   public boolean isDebug() {
     return this.debug;
   }
-
-
 
   public void encryptedKeyExchange() {
     try {
@@ -212,13 +212,31 @@ public class DatabaseService {
     }
   }
 
-  public void register() {
+  public void register() throws Exception {
     if (isDebug())
       System.out.println("\t\t\tDatabaseService: Registering service");
+    NamingServer.RegisterResponse ignore = stub.register(NamingServer.RegisterRequest.newBuilder()
+      .setRequest(ByteString.copyFrom(Operations.encryptData(
+        Base.readSecretKey(crypto.buildSessionKeyPath()),
+        Utils.serializeJson(
+          Utils.createJson(
+            List.of("service", "address", "port", "qualifier"),
+            List.of(NamingServer.Services.DatabaseServer.name(), getServerAddress(), getServerPort().toString(), getServerName()))),
+        Utils.readBytesFromFile(crypto.buildIVPath())
+    ))).build());
   }
 
-  public void delete() {
+  public void delete() throws Exception {
     if (isDebug())
       System.out.println("\t\t\tDatabaseService: Deleting service");
+    NamingServer.DeleteResponse ignore = stub.delete(NamingServer.DeleteRequest.newBuilder()
+      .setRequest(ByteString.copyFrom(Operations.encryptData(
+        Base.readSecretKey(crypto.buildSessionKeyPath()),
+        Utils.serializeJson(
+          Utils.createJson(
+            List.of("service", "address", "port", "qualifier"),
+            List.of(NamingServer.Services.DatabaseServer.name(), getServerAddress(), getServerPort().toString(), getServerName()))),
+        Utils.readBytesFromFile(crypto.buildIVPath())
+    ))).build());
   }
 }

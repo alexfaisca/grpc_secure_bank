@@ -57,7 +57,7 @@ message DeleteRequest {
 }
 
 message DeleteResponse {
-  bytes request = 1;
+  bytes response = 1;
 }
 
 service NamingServerService {

@@ -46,6 +46,8 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
         .build()));
       responseObserver.onCompleted();
     } catch (Exception e) {
+      System.out.println(e.getMessage());
+      e.printStackTrace();
       responseObserver.onError(e);
     }
   }
@@ -60,12 +62,11 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
       String client = crypto.getClientHash(request);
       JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
       String source = requestJson.getString("source");
-      String target = requestJson.getString("target");
       OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
 
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: delegate");
-      byte[] ticket = state.authenticate(source, target, client, timestamp);
+      byte[] ticket = state.authenticate(source, client, timestamp);
 
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: serialize and send response");
@@ -74,6 +75,8 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
       ));
       responseObserver.onCompleted();
     } catch (Exception e) {
+      System.out.println(e.getMessage());
+      e.printStackTrace();
       responseObserver.onError(e);
     }
   }

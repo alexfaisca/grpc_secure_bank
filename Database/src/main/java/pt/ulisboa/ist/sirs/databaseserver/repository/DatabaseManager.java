@@ -37,11 +37,10 @@ public final class DatabaseManager {
   private final DatabaseOperations databaseOperator;
   private final Session session;
 
-  public DatabaseManager(DatabaseService service) {
+  public DatabaseManager(DatabaseService service) throws Exception {
     final SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
     this.session = sessionFactory.openSession();
     this.databaseService = service;
-    databaseService.register();
     this.databaseOperator = new DatabaseState.DatabaseManagerBuilder(sessionFactory).build();
   }
 
@@ -49,7 +48,7 @@ public final class DatabaseManager {
     return databaseService;
   }
 
-  public void shutDown() {
+  public void shutDown() throws Exception {
     databaseService.delete();
     session.close();
     HibernateUtil.shutdown();
