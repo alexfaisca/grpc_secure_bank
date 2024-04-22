@@ -21,6 +21,8 @@
     <arg.server-port>2001</arg.server-port>
     <arg.database-address>localhost</arg.database-address>
     <arg.database-port>2000</arg.database-port>
+    <arg.auth-address>localhost</arg.auth-address>
+    <arg.auth-port>2005</arg.auth-port>
     <arg.path-server-trust-chain>resources/certificates/cert.pem</arg.path-server-trust-chain>
     <arg.path-server-cert>resources/certificates/cert.pem</arg.path-server-cert>
     <arg.path-server-key>resources/certificates/key.key</arg.path-server-key>
@@ -71,6 +73,8 @@
             <server-port>${arg.server-port}</server-port>
             <database-address>${arg.database-address}</database-address>
             <database-port>${arg.database-port}</database-port>
+            <authentication-server-address>${arg.auth-address}</authentication-server-address>
+            <authentication-server-port>${arg.auth-port}</authentication-server-port>
             <path-server-trust-chain>${arg.path-server-trust-chain}</path-server-trust-chain>
             <path-server-cert>${arg.path-server-cert}</path-server-cert>
             <path-server-key>${arg.path-server-key}</path-server-key>

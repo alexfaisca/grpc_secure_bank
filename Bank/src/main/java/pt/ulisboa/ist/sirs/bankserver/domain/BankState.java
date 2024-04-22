@@ -1,6 +1,7 @@
 package pt.ulisboa.ist.sirs.bankserver.domain;
 
 import pt.ulisboa.ist.sirs.bankserver.grpc.BankService;
+import pt.ulisboa.ist.sirs.bankserver.grpc.crypto.AuthenticationClientCryptographicManager;
 
 import java.io.IOException;
 
@@ -13,24 +14,30 @@ public class BankState {
       String serverName,
       String host,
       Integer port,
-      String databaseHost,
+      String databaseAddress,
       Integer databasePort,
+      String authenticationServerAddress,
+      Integer authenticationServerPort,
       String trustChainPath,
       String certChainPath,
       String connectionKeyPath,
+      AuthenticationClientCryptographicManager crypto,
       boolean debug
-    ) throws IOException {
+    ) throws Exception {
       this.debug = debug;
       this.service = new BankService.BankServiceBuilder(
         serverService,
         serverName,
         host,
         port,
-        databaseHost,
+        databaseAddress,
         databasePort,
-        trustChainPath,
+        authenticationServerAddress,
+        authenticationServerPort,
         certChainPath,
         connectionKeyPath,
+        trustChainPath,
+        crypto,
         debug
       ).build();
     }
@@ -49,7 +56,7 @@ public class BankState {
   }
 
   public String getBankingService() {
-    return service.getService();
+    return service.getServerServiceName();
   }
 
   public Integer getServerPort() {

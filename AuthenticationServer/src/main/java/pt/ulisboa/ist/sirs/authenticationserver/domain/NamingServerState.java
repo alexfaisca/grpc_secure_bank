@@ -1,6 +1,7 @@
 package pt.ulisboa.ist.sirs.authenticationserver.domain;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.dto.TargetServer;
 import pt.ulisboa.ist.sirs.authenticationserver.enums.Service.Types;
 import pt.ulisboa.ist.sirs.authenticationserver.exceptions.*;
 
@@ -59,18 +60,19 @@ public class NamingServerState {
     return this.debug;
   }
 
-  private List<ServerEntry> getServerEntries(Types service) {
-    return new ArrayList<ServerEntry>(this.services.get(service).values());
+  private List<TargetServer> getServerEntries(Types service) {
+    return this.services.get(service).values().stream().map(a -> new TargetServer(a.server, a.address, a.port, a.qualifier)).toList();
   }
 
-  public ServerEntry getServerEntry(Types service) throws ServiceHasNoRegisteredServersException {
-    return this.services.get(service).values().stream().findAny().orElseThrow(
+  public TargetServer getServerEntry(Types service) throws ServiceHasNoRegisteredServersException {
+    ServerEntry serverEntry = this.services.get(service).values().stream().findAny().orElseThrow(
       () -> new ServiceHasNoRegisteredServersException(service.name())
     );
+    return new TargetServer(serverEntry.server, serverEntry.address, serverEntry.port, serverEntry.qualifier);
   }
 
-  private ServerEntry getServerEntry(Types service, String qualifier) {
-    return this.services.get(service).get(qualifier);
+  private void addServerEntry(Types service, ServerEntry serverEntry) {
+    this.services.get(service).put(serverEntry.qualifier(), serverEntry);
   }
 
   private void removeServerEntry(Types service, String qualifier) {
@@ -102,26 +104,24 @@ public class NamingServerState {
     }
   }
 
-  public void register(
-    Types service, String server, String address, Integer port, String qualifier
-  ) throws CannotRegisterServerException {
+  public void register(Types service, String server, String address, Integer port, String qualifier) {
     if (!this.checkServiceServerExists(service, qualifier))
       this.addServerEntry(service, server, address, port, qualifier);
     if (this.isDebug())
       System.err.println(
           "\t\tNamingServerState: Adding '" + qualifier + "' at '" + address + "' to '" + service + "' service");
-    this.getServerEntries(service).add(new ServerEntry(server, address, port, qualifier));
+    this.addServerEntry(service, new ServerEntry(server, address, port, qualifier));
   }
 
-  public List<ServerEntry> lookupServiceServers(Types service) {
-    List<ServerEntry> s = getServerEntries(service);
+  public List<TargetServer> lookupServiceServers(Types service) {
+    List<TargetServer> s = getServerEntries(service);
     if (this.isDebug())
       System.err.println("\tNamingServerState: Found " + s.size() + " servers for service '" + service + "'");
     return s;
   }
 
-  public List<ServerEntry> lookupServer(Types service, String qualifier) {
-    List<ServerEntry> s = getServerEntries(service);
+  public List<TargetServer> lookupServer(Types service, String qualifier) {
+    List<TargetServer> s = getServerEntries(service);
     if (this.isDebug())
       System.err.println("\tNamingServerState: Found " + s.size() + " servers for service '" + service + "'");
     if (s.isEmpty() || qualifier.isEmpty())
