@@ -3,7 +3,6 @@ package pt.ulisboa.ist.sirs.databaseserver;
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import pt.ulisboa.ist.sirs.contract.bankserver.BankServer;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc.DatabaseServiceImplBase;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
@@ -17,9 +16,6 @@ import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 import javax.json.*;
 
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.SQLOutput;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -85,7 +81,7 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
           Utils.serializeJson(
             Json.createObjectBuilder()
               .add("nonce", crypto.getNonce())
-              .add("publicKey", Utils.byteToHex(Base.readPublicKey(Base.CryptographicCore.getPublicKeyPath()).getEncoded()))
+              .add("cert", Utils.byteToHex(Utils.readBytesFromFile(Base.CryptographicCore.getCertPath())))
               .build())
         )).build()));
       responseObserver.onCompleted();

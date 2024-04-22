@@ -1,5 +1,6 @@
 package pt.ulisboa.ist.sirs.authenticationserver.domain;
 
+import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.enums.Service.Types;
 import pt.ulisboa.ist.sirs.authenticationserver.exceptions.*;
 
@@ -96,6 +97,16 @@ public class NamingServerState {
 
   private boolean checkServiceServerExists(Types service, String qualifier) {
     return services.get(service).containsKey(qualifier);
+  }
+
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] pubKeyEnc) {
+    if (isDebug())
+      System.out.printf("\t\tAuthenticationServerState: diffieHellman initiate\n");
+    try {
+      return namingService.diffieHellmanExchange(pubKeyEnc);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void addServerEntry(Types service, String address, Integer port, String qualifier) {

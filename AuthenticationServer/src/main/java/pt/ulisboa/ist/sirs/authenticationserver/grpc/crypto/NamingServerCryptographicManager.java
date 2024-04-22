@@ -1,15 +1,26 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
-import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer.*;
+import pt.ulisboa.ist.sirs.cryptology.Base;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NamingServerCryptographicManager extends NamingServerCryptographicCore {
     private final ServerCryptographicInterceptor crypto;
+    private final Map<String, Integer> nonces = new HashMap<>();
 
     public NamingServerCryptographicManager(ServerCryptographicInterceptor crypto) {
         this.crypto = crypto;
+    }
+
+    public String getPublicKeyPath() {
+        return Base.CryptographicCore.getPublicKeyPath();
+    }
+
+    public String getPrivateKeyPath() {
+        return Base.CryptographicCore.getPrivateKeyPath();
     }
 
     public void initializeClientCache(String client) {
@@ -27,8 +38,33 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
         return "resources/crypto/server/" + client + "/iv";
     }
 
-    public String getDHClientHash() {
-        return crypto.getFromQueue(AuthenticationServer.DiffieHellmanExchangeRequest.class);
+    public String buildPublicKeyPath(String client) {
+        return "resources/crypto/server/" + client + "/publicKey";
+    }
+
+    public String getEKEClientHash() {
+        return crypto.getFromQueue(EncryptedKeyExchangeRequest.class);
+    }
+
+    public String getEKEChallengeClientHash() {
+        return crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class);
+    }
+
+    public void setNonce(Integer nonce) {
+        nonces.put(crypto.getFromQueue(EncryptedKeyExchangeRequest.class), nonce);
+    }
+
+    public Integer getNonce() {
+    return nonces.get(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class));
+}
+
+    public boolean checkNonce(Integer nonce) {
+        boolean result = false;
+        if (nonces.containsKey(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class))) {
+            result = nonces.get(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class)).equals(nonce);
+            nonces.remove(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class));
+        }
+        return result;
     }
 
     public <P> P encrypt(P object) throws Exception {

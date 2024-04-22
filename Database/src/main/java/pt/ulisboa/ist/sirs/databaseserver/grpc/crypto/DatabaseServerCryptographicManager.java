@@ -55,11 +55,6 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
     return nonces.get(crypto.getFromQueue(AuthenticateRequest.class));
   }
 
-  public void validateSession(byte[] publicKey) throws Exception {
-    String client = crypto.getFromQueue(StillAliveRequest.class);
-    Utils.writeBytesToFile(publicKey, buildPublicKeyPath(client));
-  }
-
   public boolean checkNonce(Integer nonce) {
     boolean result = false;
     if (nonces.containsKey(crypto.getFromQueue(StillAliveRequest.class))) {
@@ -67,6 +62,11 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
       nonces.remove(crypto.getFromQueue(StillAliveRequest.class));
     }
     return result;
+  }
+
+  public void validateSession(byte[] publicKey) throws Exception {
+    String client = crypto.getFromQueue(StillAliveRequest.class);
+    Utils.writeBytesToFile(publicKey, buildPublicKeyPath(client));
   }
 
   public byte[] decryptPassword(String password) {

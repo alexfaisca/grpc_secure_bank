@@ -63,6 +63,9 @@ public final class Base {
         if (!clientDirectory.mkdirs())
           throw new RuntimeException("Could not store client key");
     }
+    static String getCertPath() {
+      return "resources/certificates/cert.pem";
+    }
     static String getPublicKeyPath() {
       return "resources/crypto/self/publicKey";
     }

@@ -4,15 +4,31 @@ package pt.ulisboa.ist.sirs.contract.namingserver;
 enum Services {
     BankServer = 0;
     DatabaseServer = 1;
-  }
-
-message DiffieHellmanExchangeRequest {
-  bytes clientPublic = 1;
 }
 
-message DiffieHellmanExchangeResponse {
-  bytes serverPublic = 1;
-  bytes parameters = 2;
+message InitiateEncryptedKeyExchangeRequest {
+}
+
+message InitiateEncryptedKeyExchangeResponse {
+  bytes serverCert = 1;
+}
+
+message EncryptedKeyExchangeRequest {
+  bytes clientCert = 1;
+  bytes clientParams = 2;
+}
+
+message EncryptedKeyExchangeResponse {
+  bytes serverParams = 1;
+  bytes serverChallenge = 2;
+}
+
+message EncryptedKeyExchangeChallengeRequest {
+  bytes finalizeClient = 1;
+}
+
+message EncryptedKeyExchangeChallengeResponse {
+  bytes finalizeServer = 1;
 }
 
 message RegisterRequest {
@@ -44,6 +60,9 @@ message DeleteResponse {
 }
 
 service NamingServerService {
+  rpc initiateEncryptedKeyExchange(InitiateEncryptedKeyExchangeRequest) returns (InitiateEncryptedKeyExchangeResponse);
+  rpc encryptedKeyExchange(EncryptedKeyExchangeRequest) returns (EncryptedKeyExchangeResponse);
+  rpc encryptedKeyExchangeChallenge(EncryptedKeyExchangeChallengeRequest) returns (EncryptedKeyExchangeChallengeResponse);
   rpc register(RegisterRequest) returns (RegisterResponse);
   rpc lookup(LookupRequest) returns (LookupResponse);
   rpc delete(DeleteRequest) returns (DeleteResponse);

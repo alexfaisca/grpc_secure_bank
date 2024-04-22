@@ -15,6 +15,8 @@ import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
 import java.io.*;
 import java.security.*;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -194,11 +196,16 @@ public class UserService {
                           .build())))
               .build());
 
-      // Needham-Schroeder steps 4 and 5
+      // Needham-Schroeder steps 4 and 5 (altered to receive server cert)
       JsonObject authenticateJson = Utils.deserializeJson(crypto.decrypt(authenticateDatabaseResponse).getResponse().toByteArray());
       int challenge = Base.generateRandom(Integer.MAX_VALUE).intValue();
-      Utils.writeBytesToFile(Utils.hexToByte(
-        authenticateJson.getString("publicKey")), BankingClientCryptographicManager.buildSessionPublicKeyPath()
+      CertificateFactory certGen = CertificateFactory.getInstance("X.509");
+      X509Certificate cert = (X509Certificate) certGen.generateCertificate(
+        new ByteArrayInputStream(Utils.hexToByte(authenticateJson.getString("cert")))
+      );
+      cert.checkValidity();
+      Utils.writeBytesToFile(
+          cert.getPublicKey().getEncoded(), BankingClientCryptographicManager.buildSessionPublicKeyPath()
       );
       if (!crypto.check(authenticateDatabaseResponse))
         throw new RuntimeException("Authenticate response tampered");
