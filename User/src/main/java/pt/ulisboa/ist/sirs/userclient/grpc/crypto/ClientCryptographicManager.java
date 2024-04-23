@@ -8,9 +8,9 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
 
-public class BankingClientCryptographicManager extends BankingClientCryptographicCore implements Base.KeyManager {
+public class ClientCryptographicManager extends ClientCryptographicCore implements Base.KeyManager {
 
-  public BankingClientCryptographicManager() {
+  public ClientCryptographicManager() {
     super();
   }
 

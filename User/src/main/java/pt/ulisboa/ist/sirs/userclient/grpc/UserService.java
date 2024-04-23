@@ -7,7 +7,7 @@ import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
-import pt.ulisboa.ist.sirs.userclient.grpc.crypto.BankingClientCryptographicManager;
+import pt.ulisboa.ist.sirs.userclient.grpc.crypto.ClientCryptographicManager;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import com.google.protobuf.ByteString;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
@@ -33,7 +33,7 @@ import javax.json.JsonObject;
 public class UserService {
   public static class UserServiceBuilder {
     private final boolean debug;
-    private final BankingClientCryptographicManager crypto;
+    private final ClientCryptographicManager crypto;
     private final ChannelCredentials credentials;
     private ManagedChannel authenticationServerChannel;
     String authenticationServerAddress;
@@ -43,28 +43,26 @@ public class UserService {
         String authenticationServerAddress,
         Integer authenticationServerPort,
         String trustCertCollectionPath,
-        BankingClientCryptographicManager crypto,
-        boolean debug) throws Exception {
+        ClientCryptographicManager crypto,
+        boolean debug
+    ) throws Exception {
       this.debug = debug;
       this.crypto = crypto;
       this.authenticationServerAddress = authenticationServerAddress;
       this.authenticationServerPort = authenticationServerPort;
-      this.credentials = TlsChannelCredentials.newBuilder()
-          .trustManager(new File(trustCertCollectionPath))
-          .build();
+      this.credentials = TlsChannelCredentials.newBuilder().trustManager(new File(trustCertCollectionPath)).build();
     }
 
     public UserService build() {
       this.authenticationServerChannel = Grpc.newChannelBuilderForAddress(
-          this.authenticationServerAddress,
-          this.authenticationServerPort,
-          this.credentials).build();
+          this.authenticationServerAddress, this.authenticationServerPort, this.credentials
+      ).build();
       return new UserService(this);
     }
   }
 
   private final boolean debug;
-  private final BankingClientCryptographicManager crypto;
+  private final ClientCryptographicManager crypto;
   private final AuthenticationServerServiceGrpc.AuthenticationServerServiceBlockingStub authenticationServerServiceStub;
   private DatabaseServiceGrpc.DatabaseServiceBlockingStub databaseServiceStub;
   private final Logger logger;
@@ -73,17 +71,17 @@ public class UserService {
     this.crypto = builder.crypto;
     this.debug = builder.debug;
     this.logger = Logger.getLogger("UserService");
-    this.authenticationServerServiceStub = AuthenticationServerServiceGrpc
-        .newBlockingStub(builder.authenticationServerChannel);
+    this.authenticationServerServiceStub = AuthenticationServerServiceGrpc.newBlockingStub(
+      builder.authenticationServerChannel
+    );
     this.diffieHellman();
     this.authenticate(OffsetDateTime.now().toString(), builder.credentials);
   }
 
   private void initializeStub(String address, Integer port, ChannelCredentials credentials) {
     Channel databaseChannel = Grpc.newChannelBuilderForAddress(
-            address,
-            port,
-            credentials).build();
+      address, port, credentials
+    ).build();
     this.databaseServiceStub = DatabaseServiceGrpc.newBlockingStub(databaseChannel);
   }
 
@@ -154,12 +152,11 @@ public class UserService {
       ))).build());
 
       // Needham-Schroeder step 2
-      JsonObject ticketJson = Utils.deserializeJson(
-          Operations.decryptData(
-              Base.readSecretKey("resources/crypto/client/symmetricKey"),
-              ticketResponse.getResponse().toByteArray(),
-              Base.readIv("resources/crypto/client/iv"))
-      );
+      JsonObject ticketJson = Utils.deserializeJson(Operations.decryptData(
+        Base.readSecretKey("resources/crypto/client/symmetricKey"),
+        ticketResponse.getResponse().toByteArray(),
+        Base.readIv("resources/crypto/client/iv")
+      ));
 
       if (!ticketJson.getString("timestampString").equals(timestampString))
         throw new TamperedMessageException();
@@ -174,10 +171,10 @@ public class UserService {
           throw new RuntimeException("Could not store client key");
 
       Utils.writeBytesToFile(Utils.hexToByte(
-        ticketJson.getString("sessionKey")),BankingClientCryptographicManager.buildSessionKeyPath()
+        ticketJson.getString("sessionKey")), ClientCryptographicManager.buildSessionKeyPath()
       );
       Utils.writeBytesToFile(Utils.hexToByte(
-        ticketJson.getString("sessionIv")),BankingClientCryptographicManager.buildSessionIVPath()
+        ticketJson.getString("sessionIv")), ClientCryptographicManager.buildSessionIVPath()
       );
 
       // Needham-Schroeder step 3
@@ -200,7 +197,7 @@ public class UserService {
       );
       cert.checkValidity();
       Utils.writeBytesToFile(
-          cert.getPublicKey().getEncoded(), BankingClientCryptographicManager.buildSessionPublicKeyPath()
+          cert.getPublicKey().getEncoded(), ClientCryptographicManager.buildSessionPublicKeyPath()
       );
       if (!crypto.check(authenticateDatabaseResponse))
         throw new RuntimeException("Authenticate response tampered");
@@ -213,7 +210,7 @@ public class UserService {
             ).add(
               "nonce", authenticateJson.getInt("nonce") - 1
             ).add(
-              "publicKey", Utils.byteToHex(Utils.readBytesFromFile(BankingClientCryptographicManager.buildSelfPublicKeyPath()))
+              "publicKey", Utils.byteToHex(Utils.readBytesFromFile(ClientCryptographicManager.buildSelfPublicKeyPath()))
             ).build()
         ))).build()));
 

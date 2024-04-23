@@ -1,7 +1,7 @@
 package pt.ulisboa.ist.sirs.userclient;
 
 import pt.ulisboa.ist.sirs.userclient.grpc.UserService;
-import pt.ulisboa.ist.sirs.userclient.grpc.crypto.BankingClientCryptographicManager;
+import pt.ulisboa.ist.sirs.userclient.grpc.crypto.ClientCryptographicManager;
 import pt.ulisboa.ist.sirs.userclient.tools.SecureDocument;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
@@ -25,18 +25,18 @@ public class UserClientMain {
       );
 
     final boolean debug = System.getProperty("debug") != null;
-    final BankingClientCryptographicManager crypto = new BankingClientCryptographicManager();
-    BankingClientCryptographicManager.initializeCryptoCache();
+    final ClientCryptographicManager crypto = new ClientCryptographicManager();
+    ClientCryptographicManager.initializeCryptoCache();
     KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
     kpg.initialize(4096);
     KeyPair kp = kpg.generateKeyPair();
     Utils.writeBytesToFile(
       kp.getPublic().getEncoded(),
-      BankingClientCryptographicManager.buildSelfPublicKeyPath()
+      ClientCryptographicManager.buildSelfPublicKeyPath()
     );
     Utils.writeBytesToFile(
       kp.getPrivate().getEncoded(),
-      BankingClientCryptographicManager.buildSelfPrivateKeyPath()
+      ClientCryptographicManager.buildSelfPrivateKeyPath()
     );
 
     System.out.println(UserClientMain.class.getSimpleName());
