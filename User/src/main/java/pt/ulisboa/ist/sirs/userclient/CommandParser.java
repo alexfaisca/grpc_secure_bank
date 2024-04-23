@@ -35,7 +35,6 @@ public class CommandParser {
 
   public void parseInput() {
     boolean exit = false;
-    this.authenticate();
     try (Scanner scanner = new Scanner(System.in)) {
       while (!exit) {
 
@@ -62,12 +61,6 @@ public class CommandParser {
         }
       }
     }
-  }
-
-  private void authenticate() {
-    Instant timestamp = Instant.now();
-    String timestampString = timestamp.toString();
-    this.userService.authenticate(timestampString);
   }
 
   private void createAccount(String[] command) {

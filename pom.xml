@@ -12,7 +12,6 @@
     <module>Cryptology</module>
     <module>Contract</module>
     <module>Database</module>
-    <module>Bank</module>
     <module>User</module>
     <module>AuthenticationServer</module>
   </modules>

@@ -7,7 +7,7 @@ import pt.ulisboa.ist.sirs.authenticationserver.enums.Service.Types;
 public final class ServiceTypesConverter {
   public static Types convert(Services s) throws NoSuchServiceException {
     switch (s.getNumber()) {
-      case Services.BankServer_VALUE -> {return Types.BankServer;}
+      case Services.AuthServer_VALUE -> {return Types.AuthServer;}
       case Services.DatabaseServer_VALUE -> {return Types.DatabaseServer;}
       default -> {
         throw new NoSuchServiceException(s.name());

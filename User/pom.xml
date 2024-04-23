@@ -15,8 +15,6 @@
   	<!-- main class -->
     <main-class>pt.ulisboa.ist.sirs.userclient.UserClientMain</main-class>
   	<!-- program arguments -->
-  	<arg.server-address>localhost</arg.server-address>
-  	<arg.server-port>2001</arg.server-port>
   	<arg.authentication-server-address>localhost</arg.authentication-server-address>
   	<arg.authentication-server-port>2005</arg.authentication-server-port>
   	<arg.path-user-trust-chain>resources/certificates/cert.pem</arg.path-user-trust-chain>
@@ -62,8 +60,6 @@
 			<argument>${main-class}</argument>
 		  </arguments>
 		  <environmentVariables>
-		    <server-address>${arg.server-address}</server-address>
-		    <server-port>${arg.server-port}</server-port>
 		    <authentication-server-address>${arg.authentication-server-address}</authentication-server-address>
 		    <authentication-server-port>${arg.authentication-server-port}</authentication-server-port>
 			<path-server-cert>${arg.path-user-trust-chain}</path-server-cert>

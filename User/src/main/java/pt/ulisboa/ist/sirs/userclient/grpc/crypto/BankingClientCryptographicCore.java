@@ -1,7 +1,7 @@
 package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
 
 import com.google.protobuf.ByteString;
-import pt.ulisboa.ist.sirs.contract.bankserver.BankServer.*;
+import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.utils.*;
 
@@ -81,11 +81,15 @@ public abstract class BankingClientCryptographicCore implements Base.Cryptograph
         Base.readIv(ivPath));
   }
 
+  @Deprecated
+  @SuppressWarnings(value = "all")
   protected static boolean check(AddExpenseResponse message,
       String secretKeyPath, String publicKeyPath, String ivPath) throws Exception {
     return true;
   }
 
+  @Deprecated
+  @SuppressWarnings(value = "all")
   protected static boolean check(OrderPaymentResponse message,
       String secretKeyPath, String publicKeyPath, String ivPath) throws Exception {
     return true;

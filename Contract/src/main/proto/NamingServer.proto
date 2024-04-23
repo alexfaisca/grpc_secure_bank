@@ -2,7 +2,7 @@ syntax = "proto3";
 package pt.ulisboa.ist.sirs.contract.namingserver;
 
 enum Services {
-    BankServer = 0;
+    AuthServer = 0;
     DatabaseServer = 1;
 }
 

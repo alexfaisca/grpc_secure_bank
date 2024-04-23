@@ -52,8 +52,7 @@ public class NamingServerState {
     this.debug = builder.debug;
     this.namingService = builder.service;
     services = new HashMap<>();
-    services.put(Types.BankServer, new HashMap<>());
-    services.put(Types.DatabaseServer, new HashMap<>());
+    Arrays.stream(Types.values()).forEach(service-> services.put(service, new HashMap<>()));
   }
 
   public boolean isDebug() {

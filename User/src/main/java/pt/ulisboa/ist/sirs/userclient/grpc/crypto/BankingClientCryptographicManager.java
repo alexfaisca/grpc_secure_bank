@@ -1,6 +1,6 @@
 package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
 
-import pt.ulisboa.ist.sirs.contract.bankserver.BankServer.*;
+import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
@@ -9,7 +9,6 @@ import java.io.File;
 import java.security.NoSuchAlgorithmException;
 
 public class BankingClientCryptographicManager extends BankingClientCryptographicCore implements Base.KeyManager {
-  private final int MOCK_HASH = 0;
 
   public BankingClientCryptographicManager() {
     super();
@@ -50,14 +49,17 @@ public class BankingClientCryptographicManager extends BankingClientCryptographi
     return Utils.byteToHex(Operations.hash(password.getBytes()));
   }
 
+  @SuppressWarnings(value = "all")
   public <P> P encrypt(P object) throws Exception {
     return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
   }
 
+  @SuppressWarnings(value = "all")
   public <P> boolean check(P object) throws Exception {
     return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
   }
 
+  @SuppressWarnings(value = "all")
   public <P> P decrypt(P object) throws Exception {
     return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
   }
