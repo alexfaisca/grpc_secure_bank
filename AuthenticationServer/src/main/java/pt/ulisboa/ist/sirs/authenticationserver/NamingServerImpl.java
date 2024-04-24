@@ -51,6 +51,10 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
     };
   }
 
+  public BindableService getService() {
+    return service;
+  }
+
   @Override
   public void initiateEncryptedKeyExchange(
     Ack request, StreamObserver<InitiateEncryptedKeyExchangeResponse> responseObserver

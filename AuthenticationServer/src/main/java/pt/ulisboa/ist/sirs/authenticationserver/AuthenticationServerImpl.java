@@ -40,6 +40,10 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
     };
   }
 
+  public BindableService getService() {
+    return service;
+  }
+
   private boolean isDebug() {
     return debug;
   }

@@ -47,6 +47,10 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
     this.databaseManager = databaseManager;
   }
 
+  public BindableService getService() {
+    return service;
+  }
+
   public boolean isDebug() {
     return debug;
   }
