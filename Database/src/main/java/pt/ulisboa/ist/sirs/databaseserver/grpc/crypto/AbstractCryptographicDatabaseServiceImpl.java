@@ -10,6 +10,18 @@ import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 
 public abstract class AbstractCryptographicDatabaseServiceImpl {
   public final ServerServiceDefinition bindService(DatabaseServerCryptographicManager crypto, DatabaseServerImpl serverImpl) {
+    final MethodDescriptor<AuthenticateRequest, AuthenticateResponse> METHOD_AUTHENTICATE =
+      DatabaseServiceGrpc.getAuthenticateMethod()
+        .toBuilder(
+          DatabaseServiceGrpc.getAuthenticateMethod().getRequestMarshaller(),
+          crypto.marshallerForDatabaseAuth(AuthenticateResponse.getDefaultInstance(), DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName())
+    ).build();
+    final MethodDescriptor<StillAliveRequest, StillAliveResponse> METHOD_STILL_ALIVE =
+      DatabaseServiceGrpc.getStillAliveMethod()
+        .toBuilder(
+          crypto.marshallerForDatabaseAuth(StillAliveRequest.getDefaultInstance(), DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName()),
+          crypto.marshallerForDatabaseAuth(StillAliveResponse.getDefaultInstance(), DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName())
+    ).build();
     final MethodDescriptor<CreateAccountRequest, Ack> METHOD_CREATE_ACCOUNT =
       DatabaseServiceGrpc.getCreateAccountMethod()
         .toBuilder(
@@ -42,8 +54,8 @@ public abstract class AbstractCryptographicDatabaseServiceImpl {
     ).build();
     ServerServiceDefinition orig = serverImpl.bindService();
     return ServerServiceDefinition.builder(orig.getServiceDescriptor().getName())
-      .addMethod(DatabaseServiceGrpc.getAuthenticateMethod(), asyncUnaryCall(serverImpl::authenticate))
-      .addMethod(DatabaseServiceGrpc.getStillAliveMethod(), asyncUnaryCall(serverImpl::stillAlive))
+      .addMethod(METHOD_AUTHENTICATE, asyncUnaryCall(serverImpl::authenticate))
+      .addMethod(METHOD_STILL_ALIVE, asyncUnaryCall(serverImpl::stillAlive))
       .addMethod(METHOD_CREATE_ACCOUNT, asyncUnaryCall(serverImpl::createAccount))
       .addMethod(METHOD_DELETE_ACCOUNT, asyncUnaryCall(serverImpl::deleteAccount))
       .addMethod(METHOD_BALANCE, asyncUnaryCall(serverImpl::balance))

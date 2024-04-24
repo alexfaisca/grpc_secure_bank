@@ -1,6 +1,5 @@
 package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
 
-import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 
@@ -50,21 +49,6 @@ public class ClientCryptographicManager extends ClientCryptographicCore implemen
     return Operations.hash(password.getBytes());
   }
 
-  @SuppressWarnings(value = "all")
-  public <P> P encrypt(P object) throws Exception {
-    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
-  }
-
-  @SuppressWarnings(value = "all")
-  public <P> boolean check(P object) throws Exception {
-    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
-  }
-
-  @SuppressWarnings(value = "all")
-  public <P> P decrypt(P object) throws Exception {
-    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
-  }
-
   public byte[] encrypt(byte[] object) throws Exception {
     return encryptByteArray(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
   }
@@ -75,25 +59,5 @@ public class ClientCryptographicManager extends ClientCryptographicCore implemen
 
   public byte[] decrypt(byte[] object) throws Exception {
     return decryptByteArray(object, buildSessionKeyPath(), buildSessionIVPath());
-  }
-
-  public boolean check(AuthenticateResponse object) throws Exception {
-    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
-  }
-
-  public AuthenticateResponse decrypt(AuthenticateResponse object) throws Exception {
-    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
-  }
-
-  public boolean check(StillAliveResponse object) throws Exception {
-    return check(object, buildSessionKeyPath(), buildSessionPublicKeyPath(), buildSessionIVPath());
-  }
-
-  public StillAliveResponse decrypt(StillAliveResponse object) throws Exception {
-    return decrypt(object, buildSessionKeyPath(), buildSessionIVPath());
-  }
-
-  public StillAliveRequest encrypt(StillAliveRequest object) throws Exception {
-    return encrypt(object, buildSessionKeyPath(), buildSelfPrivateKeyPath(), buildSessionIVPath());
   }
 }

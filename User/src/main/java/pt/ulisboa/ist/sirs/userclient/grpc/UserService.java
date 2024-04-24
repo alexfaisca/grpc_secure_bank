@@ -25,7 +25,6 @@ import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.spec.SecretKeySpec;
-import javax.json.Json;
 import javax.json.JsonObject;
 
 public class UserService {
@@ -178,45 +177,31 @@ public class UserService {
 
       // Needham-Schroeder step 3
       AuthenticateResponse authenticateDatabaseResponse = databaseServiceStub.authenticate(
-        AuthenticateRequest.newBuilder().setRequest(
-          ByteString.copyFrom(
-            Utils.serializeJson(
-              Json.createObjectBuilder()
-                .add("ticket", ticketJson.getString("targetTicket"))
-                .add("timestampString", timestampString)
-                .build()
-      ))).build());
+        AuthenticateRequest.newBuilder()
+          .setTimestamp(timestampString)
+          .setTicket(ByteString.copyFrom(Utils.hexToByte(ticketJson.getString("targetTicket"))))
+      .build());
 
       // Needham-Schroeder steps 4 and 5 (altered to receive server cert)
-      JsonObject authenticateJson = Utils.deserializeJson(crypto.decrypt(authenticateDatabaseResponse).getResponse().toByteArray());
       int challenge = Base.generateRandom(Integer.MAX_VALUE).intValue();
       CertificateFactory certGen = CertificateFactory.getInstance("X.509");
       X509Certificate cert = (X509Certificate) certGen.generateCertificate(
-        new ByteArrayInputStream(Utils.hexToByte(authenticateJson.getString("cert")))
+        new ByteArrayInputStream(authenticateDatabaseResponse.getServerCert().toByteArray())
       );
       cert.checkValidity();
       Utils.writeBytesToFile(
           cert.getPublicKey().getEncoded(), ClientCryptographicManager.buildSessionPublicKeyPath()
       );
-      if (!crypto.check(authenticateDatabaseResponse))
-        throw new RuntimeException("Authenticate response tampered");
 
-      StillAliveResponse stillAliveResponse = databaseServiceStub.stillAlive(crypto.encrypt(StillAliveRequest.newBuilder().setRequest(
-        ByteString.copyFrom(
-          Utils.serializeJson(Json.createObjectBuilder()
-            .add(
-              "challenge", challenge
-            ).add(
-              "nonce", authenticateJson.getInt("nonce") - 1
-            ).add(
-              "publicKey", Utils.byteToHex(Utils.readBytesFromFile(ClientCryptographicManager.buildSelfPublicKeyPath()))
-            ).build()
-      ))).build()));
+      StillAliveResponse stillAliveResponse = databaseServiceStub.stillAlive(
+        StillAliveRequest.newBuilder()
+          .setClientChallenge(challenge)
+          .setServerChallenge(authenticateDatabaseResponse.getServerChallenge() - 1)
+          .setPublicKey(
+            ByteString.copyFrom(Utils.readBytesFromFile(ClientCryptographicManager.buildSelfPublicKeyPath()))
+      ).build());
 
-      if (!crypto.check(stillAliveResponse))
-        throw new RuntimeException("Authenticate response tampered");
-      JsonObject stillAliveJson = Utils.deserializeJson(crypto.decrypt(stillAliveResponse).getResponse().toByteArray());
-      if(stillAliveJson.getInt("challenge") != challenge + 1)
+      if(stillAliveResponse.getClientChallenge() != challenge + 1)
         throw new RuntimeException("Still alive challenge failed");
 
     } catch (StatusRuntimeException e) {

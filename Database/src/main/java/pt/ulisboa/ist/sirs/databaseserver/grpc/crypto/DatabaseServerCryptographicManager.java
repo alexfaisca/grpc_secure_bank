@@ -3,7 +3,6 @@ package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 import io.grpc.*;
 import io.grpc.MethodDescriptor.Marshaller;
 import com.google.protobuf.Message;
-import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
@@ -17,11 +16,13 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class DatabaseServerCryptographicManager extends DatabaseServerCryptographicCore implements Base.KeyManager {
   public <T extends Message> Marshaller<T> marshallerForDatabase(T message, String fullMethodName) {
     return new Marshaller<>() {
       private final String methodName = fullMethodName;
+
       @Override
       public InputStream stream(T value) {
         try {
@@ -47,10 +48,35 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
       }
     };
   }
+  public <T extends Message> Marshaller<T> marshallerForDatabaseAuth(T message, String fullMethodName) {
+    return new Marshaller<>() {
+      private final String methodName = fullMethodName;
+      @Override
+      public InputStream stream(T value) {
+        try {
+          return new ByteArrayInputStream(encryptByteArray(value.toByteArray(), methodName));
+        } catch (Exception e) {
+          throw new StatusRuntimeException(Status.INTERNAL.withDescription(Arrays.toString(e.getStackTrace())));
+        }
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public T parse(InputStream inputStream) {
+        try {
+          return (T) message.newBuilderForType().mergeFrom(decryptByteArray(inputStream.readAllBytes(), methodName)).build();
+        } catch (IOException e) {
+          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+  }
   private final String publicKeyPath;
   private final String privateKeyPath;
   private final DatabaseServerCryptographicInterceptor crypto;
-  private final Map<String, Integer> nonces = new HashMap<>();
+  private final Map<String, Long> nonces = new HashMap<>();
 
   public DatabaseServerCryptographicManager(
       DatabaseServerCryptographicInterceptor crypto,
@@ -104,15 +130,13 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
     Utils.writeBytesToFile(iv, buildSessionIVPath(client));
   }
 
-  public void setNonce(Integer nonce) {
+  public long initializeNonce() {
+    long nonce = (new Random()).nextLong();
     nonces.put(crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName()), nonce);
+    return nonce;
   }
 
-  public Integer getNonce() {
-    return nonces.get(crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName()));
-  }
-
-  public boolean checkNonce(Integer nonce) {
+  public boolean checkNonce(Long nonce) {
     boolean result = false;
     if (nonces.containsKey(crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName()))) {
       result = nonces.get(crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName())).equals(nonce);
@@ -124,10 +148,6 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
   public void validateSession(byte[] publicKey) {
     String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
     Utils.writeBytesToFile(publicKey, buildSessionPublicKeyPath(client));
-  }
-
-  public byte[] decryptPassword(String password) {
-    return Utils.hexToByte(password);
   }
 
   public byte[] encryptByteArray(byte[] object, String methodName) throws Exception {
@@ -143,30 +163,5 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
   public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
     String client = getClientHash(methodName);
     return decryptByteArray(object, buildSessionKeyPath(client), buildSessionIVPath(client));
-  }
-
-  @SuppressWarnings("all")
-  public AuthenticateRequest decrypt(AuthenticateRequest object) throws Exception {
-    return decrypt(object, buildAuthKeyPath(), buildAuthIVPath());
-  }
-
-  public AuthenticateResponse encrypt(AuthenticateResponse object) throws Exception {
-    String client = crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName());
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(), buildSessionIVPath(client));
-  }
-
-  public StillAliveResponse encrypt(StillAliveResponse object) throws Exception {
-    String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(), buildSessionIVPath(client));
-  }
-
-  public boolean check(StillAliveRequest object) throws Exception {
-    String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
-    return check(object, buildSessionKeyPath(client), buildSessionPublicKeyPath(client), buildSessionIVPath(client));
-  }
-
-  public StillAliveRequest decrypt(StillAliveRequest object) throws Exception {
-    String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
-    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 }

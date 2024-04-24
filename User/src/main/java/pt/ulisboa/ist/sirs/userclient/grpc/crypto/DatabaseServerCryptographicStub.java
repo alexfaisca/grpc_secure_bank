@@ -45,6 +45,40 @@ public final class DatabaseServerCryptographicStub extends AbstractStub<Database
       }
     };
   }
+  public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForAuth(T message) {
+    return new MethodDescriptor.Marshaller<>() {
+      @Override
+      public InputStream stream(T value) {
+        try {
+          return new ByteArrayInputStream(crypto.encrypt(value.toByteArray()));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public T parse(InputStream inputStream) {
+        try {
+          return (T) message.newBuilderForType().mergeFrom(crypto.decrypt(inputStream.readAllBytes())).build();
+        } catch (IOException e) {
+          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+  }
+  final MethodDescriptor<AuthenticateRequest, AuthenticateResponse> METHOD_AUTHENTICATE =
+    DatabaseServiceGrpc.getAuthenticateMethod().toBuilder(
+      DatabaseServiceGrpc.getAuthenticateMethod().getRequestMarshaller(),
+      marshallerForAuth(AuthenticateResponse.getDefaultInstance())
+  ).build();
+  final MethodDescriptor<StillAliveRequest, StillAliveResponse> METHOD_STILL_ALIVE =
+    DatabaseServiceGrpc.getStillAliveMethod().toBuilder(
+      marshallerFor(StillAliveRequest.getDefaultInstance()),
+      marshallerFor(StillAliveResponse.getDefaultInstance())
+  ).build();
   final MethodDescriptor<CreateAccountRequest, Ack> METHOD_CREATE_ACCOUNT =
     DatabaseServiceGrpc.getCreateAccountMethod().toBuilder(
       marshallerFor(CreateAccountRequest.getDefaultInstance()),
@@ -91,11 +125,11 @@ public final class DatabaseServerCryptographicStub extends AbstractStub<Database
   }
 
   public AuthenticateResponse authenticate(AuthenticateRequest request) {
-    return origStub.authenticate(request);
+    return blockingUnaryCall(getChannel(), METHOD_AUTHENTICATE, getCallOptions(), request);
   }
 
   public StillAliveResponse stillAlive(StillAliveRequest request) {
-    return origStub.stillAlive(request);
+    return blockingUnaryCall(getChannel(), METHOD_STILL_ALIVE, getCallOptions(), request);
   }
 
   public Ack createAccount(CreateAccountRequest request) {

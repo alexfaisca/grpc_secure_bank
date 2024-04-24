@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public final class DatabaseServerImpl extends DatabaseServiceImplBase {
   private abstract static class DatabaseServiceImpl extends AbstractCryptographicDatabaseServiceImpl implements BindableService {
@@ -68,16 +67,14 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
   public void authenticate(AuthenticateRequest request, StreamObserver<AuthenticateResponse> responseObserver) {
     try {
       // Needham-Schroeder step 3
-      JsonObject authenticateJson = Utils.deserializeJson(request.getRequest().toByteArray());
-
-      String timestampString = authenticateJson.getString("timestampString");
+      String timestampString = request.getTimestamp();
       if (oldTimestampString(OffsetDateTime.parse(timestampString)))
         throw new ReplayAttackException();
       addTimestamp(OffsetDateTime.parse(timestampString));
 
       JsonObject ticketJson = Utils.deserializeJson(Operations.decryptData(
               Base.readSecretKey(crypto.buildAuthKeyPath()),
-              Utils.hexToByte(authenticateJson.getString("ticket")),
+              request.getTicket().toByteArray(),
               Base.readIv(crypto.buildAuthIVPath())
       ));
 
@@ -89,15 +86,11 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       crypto.createSession(Utils.hexToByte(ticketJson.getString("sessionKey")),  Utils.hexToByte(ticketJson.getString("sessionIv")));
 
       // Needham-Schroeder step 4
-      crypto.setNonce((new Random()).nextInt());
-      responseObserver.onNext(crypto.encrypt(AuthenticateResponse.newBuilder().setResponse(
-        ByteString.copyFrom(
-          Utils.serializeJson(
-            Json.createObjectBuilder()
-              .add("nonce", crypto.getNonce())
-              .add("cert", Utils.byteToHex(Utils.readBytesFromFile(Base.CryptographicCore.getCertPath())))
-              .build())
-        )).build()));
+      responseObserver.onNext(
+        AuthenticateResponse.newBuilder()
+          .setServerChallenge(crypto.initializeNonce())
+          .setServerCert(ByteString.copyFrom(Utils.readBytesFromFile(Base.CryptographicCore.getCertPath())))
+      .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
       e.printStackTrace();
@@ -109,21 +102,13 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
   public void stillAlive(StillAliveRequest request, StreamObserver<StillAliveResponse> responseObserver) {
     try {
       // Needham-Schroeder step 5
-      JsonObject stillAliveJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-
-      if (!crypto.checkNonce(stillAliveJson.getInt("nonce") + 1))
+      if (!crypto.checkNonce(request.getServerChallenge() + 1))
         throw new TamperedMessageException();
-      crypto.validateSession(Utils.hexToByte(stillAliveJson.getString("publicKey")));
-      if (!crypto.check(request))
-        throw new TamperedMessageException();
+      crypto.validateSession(request.getPublicKey().toByteArray());
 
-      responseObserver.onNext(crypto.encrypt(StillAliveResponse.newBuilder().setResponse(
-        ByteString.copyFrom(
-          Utils.serializeJson(
-            Json.createObjectBuilder()
-              .add("challenge", stillAliveJson.getInt("challenge") + 1)
-              .build())
-      )).build()));
+      responseObserver.onNext(
+        StillAliveResponse.newBuilder().setClientChallenge(request.getClientChallenge() + 1)
+      .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
       e.printStackTrace();

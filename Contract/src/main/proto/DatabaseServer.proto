@@ -5,19 +5,23 @@ package pt.ulisboa.ist.sirs.contract.databaseserver;
 message Ack {}
 
 message AuthenticateRequest {
-  bytes request = 1;
+  string timestamp = 1;
+  bytes ticket = 2;
 }
 
 message AuthenticateResponse {
-  bytes response = 1;
+  int64 serverChallenge = 1;
+  bytes serverCert = 2;
 }
 
 message StillAliveRequest {
-  bytes request = 1;
+  int64 clientChallenge = 1;
+  int64 serverChallenge = 2;
+  bytes publicKey = 3;
 }
 
 message StillAliveResponse {
-  bytes response = 1;
+  int64 clientChallenge = 1;
 }
 
 message CreateAccountRequest {
