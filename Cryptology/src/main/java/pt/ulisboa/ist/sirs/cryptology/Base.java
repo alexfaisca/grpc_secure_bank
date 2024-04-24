@@ -1,23 +1,34 @@
 package pt.ulisboa.ist.sirs.cryptology;
 
+import pt.ulisboa.ist.sirs.dto.Ticket;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.json.JsonObject;
 import java.io.File;
-import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 
 public final class Base {
 
   public interface KeyManager {
+    static byte[] bundleTicket(String source, byte[] sessionKey, byte[] sessionIV) throws NoSuchAlgorithmException {
+      byte[] result = new byte[80];
+      System.arraycopy(Operations.hash(source.getBytes(StandardCharsets.UTF_8)), 0, result, 0, 32);
+      System.arraycopy(sessionKey, 0, result, 32, 32);
+      System.arraycopy(sessionIV, 0, result, 64, 16);
+      return result;
+    }
+    static Ticket unbundleTicket(byte[] ticket) throws NoSuchAlgorithmException {
+      return new Ticket(Arrays.copyOfRange(ticket, 0, 32), Arrays.copyOfRange(ticket, 32, 64), Arrays.copyOfRange(ticket, 64, 80));
+    }
+    static boolean checkHash(String source, byte[] hash) throws NoSuchAlgorithmException {
+      return Arrays.equals(Operations.hash(source.getBytes(StandardCharsets.UTF_8)), hash);
+    }
   }
 
   public interface CryptographicCore {

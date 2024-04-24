@@ -4,11 +4,9 @@ import pt.ulisboa.ist.sirs.authenticationserver.dto.AuthTicket;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
-import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
 
-import javax.json.Json;
 import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -119,12 +117,11 @@ public final class AuthenticationService extends AbstractAuthServerService {
       System.out.println("\t\t\tAuthenticationService: generating session key");
 
     byte[] sessionKey = Operations.generateSessionKey();
-
     byte[] sessionIV = Operations.generateIV(
-        new Random().nextInt(),
-        sessionKey,
-        Utils.byteToHex(
-          Operations.hash(ByteBuffer.allocate(Long.BYTES).putLong(new Random().nextLong()).array()))
+      new Random().nextInt(),
+      sessionKey,
+      Utils.byteToHex(
+        Operations.hash(ByteBuffer.allocate(Long.BYTES).putLong(new Random().nextLong()).array()))
     );
 
     if (isDebug())
@@ -132,16 +129,15 @@ public final class AuthenticationService extends AbstractAuthServerService {
 
     if (isDebug())
       System.out.println("\t\t\tAuthenticationService: serializing ticket");
-    return new AuthTicket(qualifier, address, port, timestamp, sessionKey, sessionIV, Operations.encryptData(
-      Base.readSecretKey(crypto.getTargetServerSymmetricKeyPath(target)),
-      Utils.serializeJson(
-        Json.createObjectBuilder()
-          .add("source", source)
-          .add("sessionKey", Utils.byteToHex(sessionKey))
-          .add("sessionIV", Utils.byteToHex(sessionIV))
-      .build()),
-      Base.readIv(crypto.getTargetServerIVPath(target))
-    ));
+    return new AuthTicket(
+      qualifier,
+      address,
+      port,
+      timestamp,
+      sessionKey,
+      sessionIV,
+      crypto.bundleTicket(source, sessionKey, sessionIV, target)
+    );
   }
 
   public void register() {

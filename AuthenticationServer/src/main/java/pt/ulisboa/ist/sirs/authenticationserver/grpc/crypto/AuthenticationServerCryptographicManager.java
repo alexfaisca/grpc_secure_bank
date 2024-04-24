@@ -6,14 +6,17 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc;
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-public class AuthenticationServerCryptographicManager extends AuthenticationServerCryptographicCore {
+public class AuthenticationServerCryptographicManager extends AuthenticationServerCryptographicCore implements Base.KeyManager {
   public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForNamingServer(T message, String fullMethodName) {
     return new MethodDescriptor.Marshaller<>() {
       private final String methodName = fullMethodName;
@@ -82,5 +85,13 @@ public class AuthenticationServerCryptographicManager extends AuthenticationServ
   public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
     String client = getClientHash(methodName);
     return decryptByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
+  }
+
+  public byte[] bundleTicket(String source, byte[] sessionKey, byte[] sessionIV, String target) throws Exception {
+    return Operations.encryptData(
+      Base.readSecretKey(getTargetServerSymmetricKeyPath(target)),
+      Base.KeyManager.bundleTicket(source, sessionKey, sessionIV),
+      Base.readIv(getTargetServerIVPath(target))
+    );
   }
 }

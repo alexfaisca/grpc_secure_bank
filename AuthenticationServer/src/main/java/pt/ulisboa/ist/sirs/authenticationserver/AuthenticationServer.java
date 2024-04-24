@@ -20,7 +20,6 @@ import java.util.Scanner;
 public class AuthenticationServer {
   private final boolean debug;
   private final AuthenticationServerState state;
-  private final NamingServerState namingState;
   private final Server server;
 
   public AuthenticationServer(List<String> args, boolean debug) throws IOException {
@@ -32,8 +31,8 @@ public class AuthenticationServer {
     final ServerCryptographicInterceptor namingInterceptor = new ServerCryptographicInterceptor();
     final AuthenticationServerCryptographicManager crypto = new AuthenticationServerCryptographicManager(authInterceptor);
     final NamingServerCryptographicManager namingCrypto = new NamingServerCryptographicManager(namingInterceptor);
-    this.namingState = new NamingServerState.NamingServerStateBuilder(
-      namingCrypto, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug
+    NamingServerState namingState = new NamingServerState.NamingServerStateBuilder(
+            namingCrypto, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug
     ).build();
     this.state = new AuthenticationServerState.AuthenticationServerStateBuilder(
       crypto, namingState, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug

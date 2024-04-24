@@ -4,4 +4,5 @@ module pt.ulisboa.ist.sirs.cryptology {
 
   exports pt.ulisboa.ist.sirs.cryptology;
   exports pt.ulisboa.ist.sirs.utils;
+  exports pt.ulisboa.ist.sirs.dto;
 }

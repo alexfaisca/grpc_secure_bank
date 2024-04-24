@@ -6,6 +6,9 @@ import com.google.protobuf.Message;
 
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.databaseserver.dto.TicketDto;
+import pt.ulisboa.ist.sirs.dto.Ticket;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
@@ -13,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -163,5 +167,12 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
   public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
     String client = getClientHash(methodName);
     return decryptByteArray(object, buildSessionKeyPath(client), buildSessionIVPath(client));
+  }
+
+  public TicketDto unbundleTicket(byte[] ticket) throws Exception {
+    Ticket unbundled = Base.KeyManager.unbundleTicket(Operations.decryptData(
+      Base.readSecretKey(buildAuthKeyPath()), ticket, Base.readIv(buildAuthIVPath())
+    ));
+    return new TicketDto(unbundled.sourceHash(), unbundled.sessionKey(), unbundled.sessionIV());
   }
 }

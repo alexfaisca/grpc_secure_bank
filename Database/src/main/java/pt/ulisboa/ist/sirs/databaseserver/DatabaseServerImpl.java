@@ -6,16 +6,14 @@ import io.grpc.stub.StreamObserver;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc.DatabaseServiceImplBase;
 import pt.ulisboa.ist.sirs.databaseserver.dto.MovementDto;
+import pt.ulisboa.ist.sirs.databaseserver.dto.TicketDto;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AbstractCryptographicDatabaseServiceImpl;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.repository.DatabaseManager;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
-
-import javax.json.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -75,19 +73,10 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       if (oldTimestampString(OffsetDateTime.parse(timestampString)))
         throw new ReplayAttackException();
       addTimestamp(OffsetDateTime.parse(timestampString));
-
-      JsonObject ticketJson = Utils.deserializeJson(Operations.decryptData(
-              Base.readSecretKey(crypto.buildAuthKeyPath()),
-              request.getTicket().toByteArray(),
-              Base.readIv(crypto.buildAuthIVPath())
-      ));
-
-
-      if (!ticketJson.getString("source").equals("user"))
-        throw new TamperedMessageException();
+      TicketDto ticket = crypto.unbundleTicket(request.getTicket().toByteArray());
 
       // Store session key and session iv
-      crypto.createSession(Utils.hexToByte(ticketJson.getString("sessionKey")),  Utils.hexToByte(ticketJson.getString("sessionIV")));
+      crypto.createSession(ticket.sessionKey(), ticket.sessionIV());
 
       // Needham-Schroeder step 4
       responseObserver.onNext(
