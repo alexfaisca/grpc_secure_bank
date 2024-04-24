@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package pt.ulisboa.ist.sirs.contract.databaseserver;
 
+message Ack {
+}
+
 message AuthenticateRequest {
   bytes request = 1;
 }
@@ -18,62 +21,61 @@ message StillAliveResponse {
   bytes response = 1;
 }
 
-message BalanceRequest {
-  bytes request = 1;
-}
-
-message BalanceResponse {
-  bytes response = 1;
-}
-
 message CreateAccountRequest {
-  bytes request = 1;
-}
-
-message CreateAccountResponse {
-  bytes response = 1;
+  repeated string names = 1;
+  bytes password = 2;
+  string timestamp = 3;
 }
 
 message DeleteAccountRequest {
-  bytes request = 1;
+  string name = 1;
+  bytes password = 2;
+  string timestamp = 3;
 }
 
-message DeleteAccountResponse {
-  bytes response = 1;
+message BalanceRequest {
+  string name = 1;
+  bytes password = 2;
+  string timestamp = 3;
+}
+
+message BalanceResponse {
+  string amount = 1;
 }
 
 message GetMovementsRequest {
-  bytes request = 1;
+  string name = 1;
+  bytes password = 2;
+  string timestamp = 3;
 }
 
 message GetMovementsResponse {
-  bytes response = 1;
-}
-
-message AddExpenseRequest {
-  bytes request = 1;
-}
-
-message AddExpenseResponse {
-  bytes response = 1;
+  message Movement {
+    string id = 1;
+    string currency = 2;
+    string date = 3;
+    string value = 4;
+    string description = 5;
+  }
+  repeated Movement movements = 1;
 }
 
 message OrderPaymentRequest {
-  bytes request = 1;
+  string name = 1;
+  bytes password = 2;
+  string date = 3;
+  string amount = 4;
+  string description = 5;
+  string recipient = 6;
+  string timestamp = 7;
 }
-
-message OrderPaymentResponse {
-  bytes response = 1;
-}
-
 
 service DatabaseService {
   rpc authenticate (AuthenticateRequest) returns (AuthenticateResponse);
   rpc stillAlive (StillAliveRequest) returns (StillAliveResponse);
-  rpc createAccount (CreateAccountRequest) returns (CreateAccountResponse);
-  rpc deleteAccount (DeleteAccountRequest) returns (DeleteAccountResponse);
+  rpc createAccount (CreateAccountRequest) returns (Ack);
+  rpc deleteAccount (DeleteAccountRequest) returns (Ack);
   rpc balance (BalanceRequest) returns (BalanceResponse);
   rpc getMovements (GetMovementsRequest) returns (GetMovementsResponse);
-  rpc addExpense (AddExpenseRequest) returns (AddExpenseResponse);
-  rpc orderPayment (OrderPaymentRequest) returns (OrderPaymentResponse);
+  rpc orderPayment (OrderPaymentRequest) returns (Ack);
 }

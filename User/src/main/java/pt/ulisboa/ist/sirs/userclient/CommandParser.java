@@ -3,7 +3,6 @@ package pt.ulisboa.ist.sirs.userclient;
 import pt.ulisboa.ist.sirs.userclient.grpc.UserService;
 import pt.ulisboa.ist.sirs.userclient.tools.SecureDocument;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -17,7 +16,6 @@ public class CommandParser {
   private static final String DELETE_ACCOUNT = "deleteAccount";
   private static final String BALANCE = "balance";
   private static final String SHOW_EXPENSES = "getMovements";
-  private static final String ADD_EXPENSE = "addExpense";
   private static final String HELP = "help";
   private static final String PROTECT = "protect";
   private static final String CHECK = "check";
@@ -47,7 +45,6 @@ public class CommandParser {
           case DELETE_ACCOUNT -> this.deleteAccount(command);
           case BALANCE -> this.balance(command);
           case SHOW_EXPENSES -> this.getMovements(command);
-          case ADD_EXPENSE -> this.addExpense(command);
           case PAYMENT_ORDER -> this.orderPayment(command);
           case PROTECT -> this.protect(command);
           case CHECK -> this.check(command);
@@ -108,19 +105,6 @@ public class CommandParser {
     this.userService.getMovements(username, password, OffsetDateTime.now().toString());
   }
 
-  private void addExpense(String[] command) {
-    if (command.length < 5) {
-      this.printUsage();
-      return;
-    }
-
-    String username = command[1];
-    String password = command[2];
-    String amount = command[3];
-    String description = String.join(" ", new ArrayList<>(Arrays.asList(command).subList(4, command.length)));
-    this.userService.addExpense(username, password, LocalDateTime.now().toString(), amount, description, OffsetDateTime.now().toString());
-  }
-
   private void orderPayment(String[] command) {
     if (command.length < 6) {
       this.printUsage();
@@ -174,7 +158,6 @@ public class CommandParser {
       - deleteAccount <username> <password>
       - balance <username> <password>
       - getMovements <username> <password>
-      - addExpense <username> <password> <amount> <description>
       - orderPayment <username> <password> <amount> <recipient> <description>
       - protect <input_file> <output_file>
       - check <input_file>

@@ -1,18 +1,54 @@
 package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 
-import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
+import io.grpc.*;
+import io.grpc.MethodDescriptor.Marshaller;
+import com.google.protobuf.Message;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 
+import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DatabaseServerCryptographicManager extends DatabaseServerCryptographicCore implements Base.KeyManager {
-  private final int MOCK_HASH = 0;
+  public <T extends Message> Marshaller<T> marshallerForDatabase(T message, String fullMethodName) {
+    return new Marshaller<>() {
+      private final String methodName = fullMethodName;
+      @Override
+      public InputStream stream(T value) {
+        try {
+          return new ByteArrayInputStream(encryptByteArray(value.toByteArray(), methodName));
+        } catch (Exception e) {
+          throw new StatusRuntimeException(Status.INTERNAL.withDescription(Arrays.toString(e.getStackTrace())));
+        }
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public T parse(InputStream inputStream) {
+        try {
+          byte[] request = inputStream.readAllBytes();
+          if (checkByteArray(request, methodName))
+            throw new TamperedMessageException();
+          return (T) message.newBuilderForType().mergeFrom(decryptByteArray(request, methodName)).build();
+        } catch (IOException e) {
+          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+  }
+  private final String publicKeyPath;
+  private final String privateKeyPath;
   private final DatabaseServerCryptographicInterceptor crypto;
   private final Map<String, Integer> nonces = new HashMap<>();
 
@@ -21,9 +57,21 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
       String publicKeyPath,
       String privateKeyPath) {
     super();
-    addPublicKeyPath(MOCK_HASH, publicKeyPath);
-    addPrivateKeyPath(MOCK_HASH, privateKeyPath);
+    this.publicKeyPath = publicKeyPath;
+    this.privateKeyPath = privateKeyPath;
     this.crypto = crypto;
+  }
+
+  public String getClientHash(String methodName) {
+    return crypto.getClientHash(methodName);
+  }
+
+  public String getPublicKeyPath() {
+    return this.publicKeyPath;
+  }
+
+  public String getPrivateKeyPath() {
+    return this.privateKeyPath;
   }
 
   public String buildAuthKeyPath() {
@@ -42,12 +90,12 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
     return "resources/crypto/session/" + client + "/iv";
   }
 
-  private String buildPublicKeyPath(String client) {
+  private String buildSessionPublicKeyPath(String client) {
     return "resources/crypto/session/" + client + "/publicKey";
   }
 
   public void createSession(byte[] sessionKey, byte[] iv) {
-    String client = crypto.getFromQueue(AuthenticateRequest.class);
+    String client = crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName());
     File clientDirectory = new File("resources/crypto/session/" + client + "/");
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
@@ -57,182 +105,68 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
   }
 
   public void setNonce(Integer nonce) {
-    nonces.put(crypto.getFromQueue(AuthenticateRequest.class), nonce);
+    nonces.put(crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName()), nonce);
   }
 
   public Integer getNonce() {
-    return nonces.get(crypto.getFromQueue(AuthenticateRequest.class));
+    return nonces.get(crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName()));
   }
 
   public boolean checkNonce(Integer nonce) {
     boolean result = false;
-    if (nonces.containsKey(crypto.getFromQueue(StillAliveRequest.class))) {
-      result = nonces.get(crypto.getFromQueue(StillAliveRequest.class)).equals(nonce);
-      nonces.remove(crypto.getFromQueue(StillAliveRequest.class));
+    if (nonces.containsKey(crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName()))) {
+      result = nonces.get(crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName())).equals(nonce);
+      nonces.remove(crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName()));
     }
     return result;
   }
 
-  public void validateSession(byte[] publicKey) throws Exception {
-    String client = crypto.getFromQueue(StillAliveRequest.class);
-    Utils.writeBytesToFile(publicKey, buildPublicKeyPath(client));
+  public void validateSession(byte[] publicKey) {
+    String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
+    Utils.writeBytesToFile(publicKey, buildSessionPublicKeyPath(client));
   }
 
   public byte[] decryptPassword(String password) {
     return Utils.hexToByte(password);
   }
 
-  public <P> P encrypt(P object) throws Exception {
-    return encrypt(object, getSecretKeyPath(MOCK_HASH), getPrivateKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
+  public byte[] encryptByteArray(byte[] object, String methodName) throws Exception {
+    String client = getClientHash(methodName);
+    return encryptByteArray(object, buildSessionKeyPath(client), getPrivateKeyPath(), buildSessionIVPath(client));
   }
 
-  public <P> boolean check(P object) throws Exception {
-    return check(object, getSecretKeyPath(MOCK_HASH), getPublicKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
+  public boolean checkByteArray(byte[] object, String methodName) throws Exception {
+    String client = getClientHash(methodName);
+    return !checkByteArray(object, buildSessionKeyPath(client), buildSessionPublicKeyPath(client), buildSessionIVPath(client));
   }
 
-  public <P> P decrypt(P object) throws Exception {
-    return decrypt(object, getSecretKeyPath(MOCK_HASH), getIvPath(MOCK_HASH));
+  public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
+    String client = getClientHash(methodName);
+    return decryptByteArray(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 
+  @SuppressWarnings("all")
   public AuthenticateRequest decrypt(AuthenticateRequest object) throws Exception {
     return decrypt(object, buildAuthKeyPath(), buildAuthIVPath());
   }
 
   public AuthenticateResponse encrypt(AuthenticateResponse object) throws Exception {
-    String client = crypto.popFromQueue(AuthenticateRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
+    String client = crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName());
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(), buildSessionIVPath(client));
   }
 
   public StillAliveResponse encrypt(StillAliveResponse object) throws Exception {
-    String client = crypto.popFromQueue(StillAliveRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
+    String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
+    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(), buildSessionIVPath(client));
   }
 
   public boolean check(StillAliveRequest object) throws Exception {
-    String client = crypto.getFromQueue(StillAliveRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
-      crypto.popFromQueue(StillAliveRequest.class);
-      return false;
-    }
-    return true;
+    String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
+    return check(object, buildSessionKeyPath(client), buildSessionPublicKeyPath(client), buildSessionIVPath(client));
   }
 
   public StillAliveRequest decrypt(StillAliveRequest object) throws Exception {
-    String client = crypto.getFromQueue(StillAliveRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
-  }
-
-  public BalanceResponse encrypt(BalanceResponse object) throws Exception {
-    String client = crypto.popFromQueue(BalanceRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
-  }
-
-  public boolean check(BalanceRequest object) throws Exception {
-    String client = crypto.getFromQueue(BalanceRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
-      crypto.popFromQueue(BalanceRequest.class);
-      return false;
-    }
-    return true;
-  }
-
-  public BalanceRequest decrypt(BalanceRequest object) throws Exception {
-    String client = crypto.getFromQueue(BalanceRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
-  }
-
-  public CreateAccountResponse encrypt(CreateAccountResponse object) throws Exception {
-    String client = crypto.popFromQueue(CreateAccountRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
-  }
-
-  public boolean check(CreateAccountRequest object) throws Exception {
-    String client = crypto.getFromQueue(CreateAccountRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
-      crypto.popFromQueue(BalanceRequest.class);
-      return false;
-    }
-    return true;
-  }
-
-  public CreateAccountRequest decrypt(CreateAccountRequest object) throws Exception {
-    String client = crypto.getFromQueue(CreateAccountRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
-  }
-
-  public DeleteAccountResponse encrypt(DeleteAccountResponse object) throws Exception {
-    String client = crypto.popFromQueue(DeleteAccountRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
-  }
-
-  public boolean check(DeleteAccountRequest object) throws Exception {
-    String client = crypto.getFromQueue(DeleteAccountRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
-      crypto.popFromQueue(BalanceRequest.class);
-      return false;
-    }
-    return true;
-  }
-
-  public DeleteAccountRequest decrypt(DeleteAccountRequest object) throws Exception {
-    String client = crypto.getFromQueue(DeleteAccountRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
-  }
-
-  public GetMovementsResponse encrypt(GetMovementsResponse object) throws Exception {
-    String client = crypto.popFromQueue(GetMovementsRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
-  }
-
-  public boolean check(GetMovementsRequest object) throws Exception {
-    String client = crypto.getFromQueue(GetMovementsRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
-      crypto.popFromQueue(BalanceRequest.class);
-      return false;
-    }
-    return true;
-  }
-
-  public GetMovementsRequest decrypt(GetMovementsRequest object) throws Exception {
-    String client = crypto.getFromQueue(GetMovementsRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
-  }
-
-  public AddExpenseResponse encrypt(AddExpenseResponse object) throws Exception {
-    String client = crypto.popFromQueue(AddExpenseRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
-  }
-
-  public boolean check(AddExpenseRequest object) throws Exception {
-    String client = crypto.getFromQueue(AddExpenseRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
-      crypto.popFromQueue(BalanceRequest.class);
-      return false;
-    }
-    return true;
-  }
-
-  public AddExpenseRequest decrypt(AddExpenseRequest object) throws Exception {
-    String client = crypto.getFromQueue(AddExpenseRequest.class);
-    return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
-  }
-
-  public OrderPaymentResponse encrypt(OrderPaymentResponse object) throws Exception {
-    String client = crypto.popFromQueue(OrderPaymentRequest.class);
-    return encrypt(object, buildSessionKeyPath(client), getPrivateKeyPath(MOCK_HASH), buildSessionIVPath(client));
-  }
-
-  public boolean check(OrderPaymentRequest object) throws Exception {
-    String client = crypto.getFromQueue(OrderPaymentRequest.class);
-    if (!check(object, buildSessionKeyPath(client), buildPublicKeyPath(client), buildSessionIVPath(client))) {
-      crypto.popFromQueue(BalanceRequest.class);
-      return false;
-    }
-    return true;
-  }
-
-  public OrderPaymentRequest decrypt(OrderPaymentRequest object) throws Exception {
-    String client = crypto.getFromQueue(OrderPaymentRequest.class);
+    String client = crypto.getFromQueue(DatabaseServiceGrpc.getStillAliveMethod().getFullMethodName());
     return decrypt(object, buildSessionKeyPath(client), buildSessionIVPath(client));
   }
 }

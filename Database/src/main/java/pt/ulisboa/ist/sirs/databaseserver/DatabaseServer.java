@@ -61,12 +61,11 @@ public class DatabaseServer {
         new AuthenticationClientCryptographicManager(),
         debug)
     .build());
-
-
+    final DatabaseServerImpl databaseServer = new DatabaseServerImpl(state, cryptoCore, debug);
     this.server = Grpc.newServerBuilderForPort(
       databasePort,
       TlsServerCredentials.newBuilder().keyManager(new File(args.get(7)), new File(args.get(8))).build())
-      .addService(ServerInterceptors.intercept(new DatabaseServerImpl(state, cryptoCore, debug), crypto)).build();
+      .addService(ServerInterceptors.intercept(databaseServer.service, crypto)).build();
   }
 
   private void serverStartup() throws IOException {

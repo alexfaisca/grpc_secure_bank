@@ -4,10 +4,10 @@ import io.grpc.*;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
-import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.ClientCryptographicManager;
+import pt.ulisboa.ist.sirs.userclient.grpc.crypto.DatabaseServerCryptographicStub;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import com.google.protobuf.ByteString;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
@@ -26,11 +26,10 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.spec.SecretKeySpec;
 import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
 public class UserService {
+
   public static class UserServiceBuilder {
     private final boolean debug;
     private final ClientCryptographicManager crypto;
@@ -64,7 +63,7 @@ public class UserService {
   private final boolean debug;
   private final ClientCryptographicManager crypto;
   private final AuthenticationServerServiceGrpc.AuthenticationServerServiceBlockingStub authenticationServerServiceStub;
-  private DatabaseServiceGrpc.DatabaseServiceBlockingStub databaseServiceStub;
+  private DatabaseServerCryptographicStub databaseServiceStub;
   private final Logger logger;
 
   private UserService(UserServiceBuilder builder) {
@@ -82,7 +81,7 @@ public class UserService {
     Channel databaseChannel = Grpc.newChannelBuilderForAddress(
       address, port, credentials
     ).build();
-    this.databaseServiceStub = DatabaseServiceGrpc.newBlockingStub(databaseChannel);
+    this.databaseServiceStub = new DatabaseServerCryptographicStub(databaseChannel, crypto);
   }
 
   public void diffieHellman() {
@@ -231,31 +230,16 @@ public class UserService {
     try {
       if (debug)
         System.out.println("\tUserService: encoding create account request");
+      if (passwords.isEmpty())
+        throw new RuntimeException("Please provide the necessary information.");
+      String password = passwords.get(0);
 
-      JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder();
-      for (String username : usernames) {
-        jsonArrayBuilder.add(username);
-      }
-      JsonArray usernamesJson = jsonArrayBuilder.build();
-
-      jsonArrayBuilder = Json.createArrayBuilder();
-      for (String password : passwords) {
-        jsonArrayBuilder.add(crypto.encryptPassword(password));
-      }
-      JsonArray passwordsJson = jsonArrayBuilder.build();
-
-      byte[] requestJson = Utils.serializeJson(Json.createObjectBuilder()
-          .add("usernames", usernamesJson)
-          .add("passwords", passwordsJson)
-          .add("timestampString", timestampString)
-          .build());
-
-      if (debug)
-        System.out.println("\tUserService: making rpc");
-
-      CreateAccountResponse ignored = databaseServiceStub.createAccount(crypto.encrypt(
-        CreateAccountRequest.newBuilder().setRequest(ByteString.copyFrom(requestJson)
-      ).build()));
+      Ack ignored = databaseServiceStub.createAccount(
+        CreateAccountRequest.newBuilder()
+          .addAllNames(usernames)
+          .setPassword(ByteString.copyFrom(crypto.encryptPassword(password)))
+          .setTimestamp(timestampString)
+      .build());
 
       if (debug)
         System.out.println("\tUserService: processing create account response");
@@ -271,16 +255,13 @@ public class UserService {
     try {
       if (debug)
         System.out.println("\tUserService: encoding delete account request");
-      byte[] requestJson = Utils.serializeJson(
-          Utils.createJson(
-              List.of("username", "password", "timestampString"),
-              List.of(username, crypto.encryptPassword(password), timestampString)));
 
-      if (debug)
-        System.out.println("\tUserService: making rpc");
-      DeleteAccountResponse ignored = databaseServiceStub.deleteAccount(crypto.encrypt(
-        DeleteAccountRequest.newBuilder().setRequest(ByteString.copyFrom(requestJson)
-      ).build()));
+      Ack ignored = databaseServiceStub.deleteAccount(
+        DeleteAccountRequest.newBuilder()
+          .setName(username)
+          .setPassword(ByteString.copyFrom(crypto.encryptPassword(password)))
+          .setTimestamp(timestampString)
+      .build());
 
       if (debug)
         System.out.println("\tUserService: processing delete account response");
@@ -295,25 +276,17 @@ public class UserService {
     try {
       if (debug)
         System.out.println("\tUserService: encoding delete account request");
-      byte[] requestJson = Utils.serializeJson(Utils.createJson(
-        List.of("username", "password", "timestampString"),
-        List.of(username, crypto.encryptPassword(password), timestampString)
-      ));
 
-      if (debug)
-        System.out.println("\tUserService: making rpc");
-
-      BalanceResponse balanceResponse = databaseServiceStub.balance(crypto.encrypt(
-        BalanceRequest.newBuilder().setRequest(ByteString.copyFrom(requestJson)
-      ).build()));
-
-      if (!crypto.check(balanceResponse))
-        throw new RuntimeException("Message contents were tampered with");
+      BalanceResponse balanceResponse = databaseServiceStub.balance(
+        BalanceRequest.newBuilder()
+          .setName(username)
+          .setPassword(ByteString.copyFrom(crypto.encryptPassword(password)))
+          .setTimestamp(timestampString)
+      .build());
 
       if (debug)
         System.out.println("\tUserService: processing balance response");
-      JsonObject responseJson = Utils.deserializeJson(crypto.decrypt(balanceResponse).getResponse().toByteArray());
-      System.out.println(responseJson.getString("balance"));
+      System.out.println(balanceResponse.getAmount());
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
     } catch (Exception e) {
@@ -325,56 +298,23 @@ public class UserService {
     try {
       if (debug)
         System.out.println("\tUserService: encoding show expenses request");
-      byte[] requestJson = Utils.serializeJson(Utils.createJson(
-        List.of("username", "password", "timestampString"),
-        List.of(username, crypto.encryptPassword(password), timestampString)
-      ));
 
-      if (debug)
-        System.out.println("\tUserService: making rpc");
+      GetMovementsResponse getAccountMovementsResponse = databaseServiceStub.getMovements(
+        GetMovementsRequest.newBuilder()
+          .setName(username)
+          .setPassword(ByteString.copyFrom(crypto.encryptPassword(password)))
+          .setTimestamp(timestampString)
+      .build());
 
-      GetMovementsResponse getAccountMovementsResponse = databaseServiceStub.getMovements(crypto.encrypt(
-        GetMovementsRequest.newBuilder().setRequest(ByteString.copyFrom(requestJson)
-      ).build()));
-
-      if (!crypto.check(getAccountMovementsResponse))
-        throw new RuntimeException("Message contents were tampered with");
-
-      if (debug)
-        System.out.println("\tUserService: processing get account movements response");
-      JsonObject responseJson = Utils
-          .deserializeJson(crypto.decrypt(getAccountMovementsResponse).getResponse().toByteArray());
-      for (int i = 0; i < responseJson.getJsonArray("movements").size(); i++) {
-        JsonObject movement = responseJson.getJsonArray("movements").getJsonObject(i);
-        System.out.printf("Movement %d\n\tCurrency: %s\n\tDate: %s\n\tValue: %s\n\tDescription: %s\n", i + 1,
-            movement.getString("currency"), movement.getString("date"), movement.getString("value"),
-            movement.getString("description"));
-      }
-    } catch (StatusRuntimeException e) {
-      logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
-    } catch (Exception e) {
-      logger.log(Level.SEVERE, Arrays.toString(e.getStackTrace()), e);
-    }
-  }
-
-  public void addExpense(String username, String password, String date, String amount, String description,
-      String timestampString) {
-    try {
-      if (debug)
-        System.out.println("\tUserService: encoding add expense request");
-      byte[] requestJson = Utils.serializeJson(Utils.createJson(
-        List.of("username", "password", "date", "amount", "description", "timestampString"),
-        List.of(username, crypto.encryptPassword(password), date, amount, description, timestampString)
-      ));
-
-      if (debug)
-        System.out.println("\tUserService: making rpc");
-      AddExpenseResponse ignored = databaseServiceStub.addExpense(crypto.encrypt(
-        AddExpenseRequest.newBuilder().setRequest(ByteString.copyFrom(requestJson)
-      ).build()));
-
-      if (debug)
-        System.out.println("\tUserService: processing add expense response");
+      for (GetMovementsResponse.Movement m: getAccountMovementsResponse.getMovementsList())
+        System.out.printf(
+          "Movement %s\n\tCurrency: %s\n\tDate: %s\n\tValue: %s\n\tDescription: %s\n",
+          m.getId(),
+          m.getCurrency(),
+          m.getDate(),
+          m.getValue(),
+          m.getDescription()
+      );
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
     } catch (Exception e) {
@@ -387,16 +327,17 @@ public class UserService {
     try {
       if (debug)
         System.out.println("\tUserService: encoding payment order request");
-      byte[] requestJson = Utils.serializeJson(Utils.createJson(
-        List.of("username", "password", "date", "amount", "description", "recipient", "timestampString"),
-        List.of(username, crypto.encryptPassword(password), date, amount, description, recipient, timestampString)
-      ));
 
-      if (debug)
-        System.out.println("\tUserService: making rpc");
-      OrderPaymentResponse ignored = databaseServiceStub.orderPayment(crypto.encrypt(
-        OrderPaymentRequest.newBuilder().setRequest(ByteString.copyFrom(requestJson)
-      ).build()));
+      Ack ignored = databaseServiceStub.orderPayment(
+        OrderPaymentRequest.newBuilder()
+          .setName(username)
+          .setPassword(ByteString.copyFrom(crypto.encryptPassword(password)))
+          .setDate(date)
+          .setDate(amount)
+          .setDate(description)
+          .setDate(recipient)
+          .setTimestamp(timestampString)
+      .build());
 
       if (debug)
         System.out.println("\tUserService: processing payment order response");

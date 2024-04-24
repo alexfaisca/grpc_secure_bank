@@ -18,42 +18,6 @@ import java.util.Map;
 public final class Base {
 
   public interface KeyManager {
-    Map<Integer, String> ivPaths = new HashMap<>();
-    Map<Integer, String> secretKeyPaths = new HashMap<>();
-    Map<Integer, String> publicKeyPaths = new HashMap<>();
-    Map<Integer, String> privateKeyPaths = new HashMap<>();
-
-    default String getIvPath(Integer user) {
-      return ivPaths.get(user);
-    }
-
-    default String getSecretKeyPath(Integer user) {
-      return secretKeyPaths.get(user);
-    }
-
-    default String getPublicKeyPath(Integer user) {
-      return publicKeyPaths.get(user);
-    }
-
-    default String getPrivateKeyPath(Integer user) {
-      return privateKeyPaths.get(user);
-    }
-
-    default void addIvPath(Integer user, String ivPath) {
-      ivPaths.put(user, ivPath);
-    }
-
-    default void addSecretKeyPath(Integer user, String secretKeyPath) {
-      secretKeyPaths.put(user, secretKeyPath);
-    }
-
-    default void addPublicKeyPath(Integer user, String publicKeyPath) {
-      publicKeyPaths.put(user, publicKeyPath);
-    }
-
-    default void addPrivateKeyPath(Integer user, String publicKeyPath) {
-      privateKeyPaths.put(user, publicKeyPath);
-    }
   }
 
   public interface CryptographicCore {
@@ -99,6 +63,11 @@ public final class Base {
       public static JsonObject decrypt(byte[] input, SecretKey secretKey, byte[] iv)
           throws Exception {
         return Utils.deserializeJson(Security.unprotect(input, secretKey, iv));
+      }
+
+      public static byte[] decryptByteArray(byte[] input, SecretKey secretKey, byte[] iv)
+              throws Exception {
+        return Security.unprotect(input, secretKey, iv);
       }
     }
 

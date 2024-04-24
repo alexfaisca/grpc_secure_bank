@@ -101,19 +101,8 @@ public class DatabaseState implements DatabaseOperations {
   }
 
   @Override
-  public JsonArrayBuilder getMovements(String username) {
-    JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-
-    for (MovementDto movementDto : movementService.getAccountMovements(username)) {
-      arrayBuilder.add(
-          Json.createObjectBuilder()
-              .add("currency", movementDto.currency())
-              .add("date", movementDto.date().toString())
-              .add("value", movementDto.amount().toString())
-              .add("description", movementDto.description()));
-    }
-
-    return arrayBuilder;
+  public List<MovementDto> getMovements(String username) {
+    return movementService.getAccountMovements(username);
   }
 
   @Override

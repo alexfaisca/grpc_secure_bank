@@ -1,11 +1,11 @@
 package pt.ulisboa.ist.sirs.databaseserver.repository;
 
+import pt.ulisboa.ist.sirs.databaseserver.dto.MovementDto;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
-
-import javax.json.JsonArrayBuilder;
 
 public interface DatabaseOperations {
 
@@ -23,7 +23,7 @@ public interface DatabaseOperations {
 
   BigDecimal balance(String username);
 
-  JsonArrayBuilder getMovements(String username);
+  List<MovementDto> getMovements(String username);
 
   @Deprecated
   void addExpense(String username, LocalDateTime date, BigDecimal amount, String description);

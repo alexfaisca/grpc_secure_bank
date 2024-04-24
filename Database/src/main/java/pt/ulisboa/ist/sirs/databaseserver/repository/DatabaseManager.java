@@ -3,6 +3,7 @@ package pt.ulisboa.ist.sirs.databaseserver.repository;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
+import pt.ulisboa.ist.sirs.databaseserver.dto.MovementDto;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseService;
 import pt.ulisboa.ist.sirs.databaseserver.repository.core.DatabaseTransaction;
 import pt.ulisboa.ist.sirs.databaseserver.repository.core.HibernateUtil;
@@ -89,8 +90,8 @@ public final class DatabaseManager {
     }.yield();
   }
 
-  public JsonArrayBuilder getMovements(String username, byte[] password, OffsetDateTime timestamp) {
-    return new SimpleDatabaseTransaction<JsonArrayBuilder>() {
+  public List<MovementDto> getMovements(String username, byte[] password, OffsetDateTime timestamp) {
+    return new SimpleDatabaseTransaction<List<MovementDto>>() {
       @Override
       public void doInTransaction() {
         databaseOperator.registerOperation(DatabaseOperations.RequestType.GET_MOVEMENTS, timestamp);

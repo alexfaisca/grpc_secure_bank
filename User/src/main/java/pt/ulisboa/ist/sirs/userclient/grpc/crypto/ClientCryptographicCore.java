@@ -21,6 +21,26 @@ public abstract class ClientCryptographicCore implements Base.CryptographicCore 
     throw new Exception("No such response");
   }
 
+  public boolean checkByteArray(
+    byte[] message, String secretKeyPath, String publicKeyPath, String ivPath
+  ) throws Exception {
+    return Decrypter.check(
+      message, Base.readSecretKey(secretKeyPath), Base.readPublicKey(publicKeyPath), Base.readIv(ivPath)
+    );
+  }
+
+  public static byte[] decryptByteArray(byte[] message, String secretKeyPath, String ivPath) throws Exception {
+    return Decrypter.decryptByteArray(message, Base.readSecretKey(secretKeyPath), Base.readIv(ivPath));
+  }
+
+  protected static byte[] encryptByteArray(
+          byte[] message, String secretKeyPath, String privateKeyPath, String ivPath
+  ) throws Exception {
+    return Encrypter.encrypt(
+            message, Base.readSecretKey(secretKeyPath), Base.readPrivateKey(privateKeyPath), Base.readIv(ivPath)
+    );
+  }
+
   protected static boolean check(
     AuthenticateResponse message, String secretKeyPath, String publicKeyPath, String ivPath
   ) throws Exception {
@@ -43,66 +63,6 @@ public abstract class ClientCryptographicCore implements Base.CryptographicCore 
     );
   }
 
-  protected static boolean check(
-    BalanceResponse message, String secretKeyPath, String publicKeyPath, String ivPath
-  ) throws Exception {
-    return Decrypter.check(
-      message.getResponse().toByteArray(),
-      Base.readSecretKey(secretKeyPath),
-      Base.readPublicKey(publicKeyPath),
-      Base.readIv(ivPath)
-    );
-  }
-
-  protected static boolean check(
-    CreateAccountResponse message, String secretKeyPath, String publicKeyPath, String ivPath
-  ) throws Exception {
-    return Decrypter.check(
-      message.getResponse().toByteArray(),
-      Base.readSecretKey(secretKeyPath),
-      Base.readPublicKey(publicKeyPath),
-      Base.readIv(ivPath)
-    );
-  }
-
-  protected static boolean check(
-    DeleteAccountResponse message, String secretKeyPath, String publicKeyPath, String ivPath
-  ) throws Exception {
-    return Decrypter.check(
-      message.getResponse().toByteArray(),
-      Base.readSecretKey(secretKeyPath),
-      Base.readPublicKey(publicKeyPath),
-      Base.readIv(ivPath)
-    );
-  }
-
-  protected static boolean check(
-    GetMovementsResponse message, String secretKeyPath, String publicKeyPath, String ivPath
-  ) throws Exception {
-    return Decrypter.check(
-      message.getResponse().toByteArray(),
-      Base.readSecretKey(secretKeyPath),
-      Base.readPublicKey(publicKeyPath),
-      Base.readIv(ivPath)
-    );
-  }
-
-  @Deprecated
-  @SuppressWarnings(value = "all")
-  protected static boolean check(
-    AddExpenseResponse message, String secretKeyPath, String publicKeyPath, String ivPath
-  ) throws Exception {
-    return true;
-  }
-
-  @Deprecated
-  @SuppressWarnings(value = "all")
-  protected static boolean check(
-    OrderPaymentResponse message, String secretKeyPath, String publicKeyPath, String ivPath
-  ) throws Exception {
-    return true;
-  }
-
   protected static AuthenticateResponse decrypt(
     AuthenticateResponse message, String secretKeyPath, String ivPath
   ) throws Exception {
@@ -121,60 +81,6 @@ public abstract class ClientCryptographicCore implements Base.CryptographicCore 
     ).build();
   }
 
-  protected static BalanceResponse decrypt(
-    BalanceResponse message, String secretKeyPath, String ivPath
-  ) throws Exception {
-    return BalanceResponse.newBuilder().setResponse(
-      ByteString.copyFrom(Utils.serializeJson(
-        Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath), Base.readIv(ivPath))))
-    ).build();
-  }
-
-  protected static CreateAccountResponse decrypt(
-    CreateAccountResponse message, String secretKeyPath, String ivPath
-  ) throws Exception {
-    return CreateAccountResponse.newBuilder().setResponse(
-      ByteString.copyFrom(Utils.serializeJson(
-        Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath), Base.readIv(ivPath))))
-    ).build();
-  }
-
-  protected static DeleteAccountResponse decrypt(
-    DeleteAccountResponse message, String secretKeyPath, String ivPath
-  ) throws Exception {
-    return DeleteAccountResponse.newBuilder().setResponse(
-      ByteString.copyFrom(Utils.serializeJson(
-        Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath), Base.readIv(ivPath))))
-    ).build();
-  }
-
-  protected static GetMovementsResponse decrypt(
-    GetMovementsResponse message, String secretKeyPath, String ivPath
-  ) throws Exception {
-    return GetMovementsResponse.newBuilder().setResponse(
-      ByteString.copyFrom(Utils.serializeJson(
-        Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath), Base.readIv(ivPath))))
-    ).build();
-  }
-
-  protected static AddExpenseResponse decrypt(
-    AddExpenseResponse message, String secretKeyPath, String ivPath
-  ) throws Exception {
-    return AddExpenseResponse.newBuilder().setResponse(
-      ByteString.copyFrom(Utils.serializeJson(
-        Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath), Base.readIv(ivPath))))
-    ).build();
-  }
-
-  protected static OrderPaymentResponse decrypt(
-    OrderPaymentResponse message, String secretKeyPath, String ivPath
-  ) throws Exception {
-    return OrderPaymentResponse.newBuilder().setResponse(
-      ByteString.copyFrom(Utils.serializeJson(
-        Decrypter.decrypt(message.getResponse().toByteArray(), Base.readSecretKey(secretKeyPath), Base.readIv(ivPath))))
-    ).build();
-  }
-
   protected static StillAliveRequest encrypt(
     StillAliveRequest message,
     String secretKeyPath, String privateKeyPath, String ivPath
@@ -187,83 +93,5 @@ public abstract class ClientCryptographicCore implements Base.CryptographicCore 
           Base.readPrivateKey(privateKeyPath),
           Base.readIv(ivPath)))
     ).build();
-  }
-
-  protected static BalanceRequest encrypt(
-    BalanceRequest message, String secretKeyPath, String privateKeyPath, String ivPath
-  ) throws Exception {
-    return BalanceRequest.newBuilder().setRequest(
-      ByteString.copyFrom(
-        Encrypter.encrypt(
-          message.getRequest().toByteArray(),
-          Base.readSecretKey(secretKeyPath),
-          Base.readPrivateKey(privateKeyPath),
-          Base.readIv(ivPath)))
-    ).build();
-  }
-
-  protected static CreateAccountRequest encrypt(
-    CreateAccountRequest message, String secretKey, String privateKeyPath, String ivPath
-  ) throws Exception {
-    return CreateAccountRequest.newBuilder().setRequest(
-      ByteString.copyFrom(
-        Encrypter.encrypt(
-          message.getRequest().toByteArray(),
-          Base.readSecretKey(secretKey),
-          Base.readPrivateKey(privateKeyPath),
-          Base.readIv(ivPath)))
-    ).build();
-  }
-
-  protected static DeleteAccountRequest encrypt(
-    DeleteAccountRequest message, String secretKeyPath, String privateKeyPath, String ivPath
-  ) throws Exception {
-    return DeleteAccountRequest.newBuilder().setRequest(
-      ByteString.copyFrom(
-        Encrypter.encrypt(
-          message.getRequest().toByteArray(),
-          Base.readSecretKey(secretKeyPath),
-          Base.readPrivateKey(privateKeyPath),
-          Base.readIv(ivPath)))
-    ).build();
-  }
-
-  protected static GetMovementsRequest encrypt(
-    GetMovementsRequest message, String secretKeyPath, String privateKeyPath, String ivPath
-  ) throws Exception {
-    return GetMovementsRequest.newBuilder().setRequest(
-      ByteString.copyFrom(
-        Encrypter.encrypt(
-          message.getRequest().toByteArray(),
-          Base.readSecretKey(secretKeyPath),
-          Base.readPrivateKey(privateKeyPath),
-          Base.readIv(ivPath)))
-    ).build();
-  }
-
-  protected static AddExpenseRequest encrypt(
-    AddExpenseRequest message, String secretKeyPath, String privateKeyPath, String ivPath
-  ) throws Exception {
-    return AddExpenseRequest.newBuilder().setRequest(
-      ByteString.copyFrom(
-        Encrypter.encrypt(
-          message.getRequest().toByteArray(),
-          Base.readSecretKey(secretKeyPath),
-          Base.readPrivateKey(privateKeyPath),
-          Base.readIv(ivPath)))
-    ).build();
-  }
-
-  protected static OrderPaymentRequest encrypt(
-    OrderPaymentRequest message, String secretKeyPath, String privateKeyPath, String ivPath
-  ) throws Exception {
-    return OrderPaymentRequest.newBuilder().setRequest(
-      ByteString.copyFrom(
-        Encrypter.encrypt(
-          message.getRequest().toByteArray(),
-          Base.readSecretKey(secretKeyPath),
-          Base.readPrivateKey(privateKeyPath),
-          Base.readIv(ivPath))
-    )).build();
   }
 }

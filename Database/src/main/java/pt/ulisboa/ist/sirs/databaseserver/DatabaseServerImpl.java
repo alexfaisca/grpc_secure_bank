@@ -1,10 +1,12 @@
 package pt.ulisboa.ist.sirs.databaseserver;
 
 import com.google.protobuf.ByteString;
-import io.grpc.Status;
+import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc.DatabaseServiceImplBase;
+import pt.ulisboa.ist.sirs.databaseserver.dto.MovementDto;
+import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AbstractCryptographicDatabaseServiceImpl;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.repository.DatabaseManager;
 import pt.ulisboa.ist.sirs.utils.Utils;
@@ -23,15 +25,27 @@ import java.util.List;
 import java.util.Random;
 
 public final class DatabaseServerImpl extends DatabaseServiceImplBase {
+  private abstract static class DatabaseServiceImpl extends AbstractCryptographicDatabaseServiceImpl implements BindableService {
+    @Override
+    public abstract ServerServiceDefinition bindService();
+  }
   private final boolean debug;
   private final DatabaseManager databaseManager;
   private final DatabaseServerCryptographicManager crypto;
   private final List<OffsetDateTime> timestamps = new ArrayList<>();
+  public final BindableService service;
 
   public DatabaseServerImpl(DatabaseManager databaseManager, DatabaseServerCryptographicManager crypto, boolean debug) {
+    final DatabaseServerImpl serverImpl = this;
+    this.crypto = crypto;
+    this.service = new DatabaseServiceImpl() {
+      @Override
+      public ServerServiceDefinition bindService() {
+        return super.bindService(crypto, serverImpl);
+      }
+    };
     this.debug = debug;
     this.databaseManager = databaseManager;
-    this.crypto = crypto;
   }
 
   public boolean isDebug() {
@@ -117,27 +131,18 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
     }
   }
 
-  public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
+  public void createAccount(CreateAccountRequest request, StreamObserver<Ack> responseObserver) {
     try {
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: create account");
 
-      if (!crypto.check(request))
-        throw new TamperedMessageException();
-      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-      List<String> usernames = new ArrayList<>();
-      for (int i = 0; i < requestJson.getJsonArray("usernames").size(); i++)
-        usernames.add(requestJson.getJsonArray("usernames").getString(i));
-      byte[] password = crypto.decryptPassword(requestJson.getJsonArray("passwords").getString(0));
-      OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
-
-      if (isDebug())
-        System.out.printf("\t\tUsername: %s\n\t\tPassword (Hex): %s\n", String.join(" ", usernames),
-          Utils.byteToHex(password));
+      List<String> usernames = request.getNamesList().stream().toList();
+      byte[] password = request.getPassword().toByteArray();
+      OffsetDateTime timestamp = OffsetDateTime.parse(request.getTimestamp());
 
       databaseManager.createAccount(usernames, password, BigDecimal.ZERO, timestamp);
 
-      responseObserver.onNext(crypto.encrypt(CreateAccountResponse.newBuilder().build()));
+      responseObserver.onNext(Ack.getDefaultInstance());
       responseObserver.onCompleted();
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: create account successful");
@@ -146,24 +151,18 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
     }
   }
 
-  public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
+  public void deleteAccount(DeleteAccountRequest request, StreamObserver<Ack> responseObserver) {
     try {
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: delete account");
 
-      if (!crypto.check(request))
-        throw new TamperedMessageException();
-      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-      String username = requestJson.getString("username");
-      byte[] password = crypto.decryptPassword(requestJson.getString("password"));
-      OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
-
-      if (isDebug())
-        System.out.printf("\t\tUsername: %s\n\t\tPassword (Hex): %s\n", username, Utils.byteToHex(password));
+      String username = request.getName();
+      byte[] password = request.getPassword().toByteArray();
+      OffsetDateTime timestamp = OffsetDateTime.parse(request.getTimestamp());
 
       databaseManager.deleteAccount(username, password, timestamp);
 
-      responseObserver.onNext(crypto.encrypt(DeleteAccountResponse.newBuilder().build()));
+      responseObserver.onNext(Ack.getDefaultInstance());
       responseObserver.onCompleted();
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: delete account successful");
@@ -178,23 +177,13 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: balance");
 
-      if (!crypto.check(request))
-        throw new TamperedMessageException();
-      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-      String username = requestJson.getString("username");
-      byte[] password = crypto.decryptPassword(requestJson.getString("password"));
-      OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
-
-      if (isDebug())
-        System.out.printf("\t\tUsername: %s\n\t\tPassword (Hex): %s\n", username, Utils.byteToHex(password));
+      String username = request.getName();
+      byte[] password = request.getPassword().toByteArray();
+      OffsetDateTime timestamp = OffsetDateTime.parse(request.getTimestamp());
 
       BigDecimal balance = databaseManager.balance(username, password, timestamp);
 
-      responseObserver.onNext(crypto.encrypt(BalanceResponse.newBuilder().setResponse(
-        ByteString.copyFrom(
-          Utils.serializeJson(Utils.createJson(List.of("balance"), List.of(balance.toString())))))
-        .build()
-      ));
+      responseObserver.onNext(BalanceResponse.newBuilder().setAmount(balance.toString()).build());
       responseObserver.onCompleted();
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: balance successful");
@@ -208,23 +197,22 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: get account movements");
 
-      if (!crypto.check(request))
-        throw new TamperedMessageException();
-      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-      String username = requestJson.getString("username");
-      byte[] password = crypto.decryptPassword(requestJson.getString("password"));
-      OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
+      String username = request.getName();
+      byte[] password = request.getPassword().toByteArray();
+      OffsetDateTime timestamp = OffsetDateTime.parse(request.getTimestamp());
 
-      if (isDebug())
-        System.out.printf("\t\tUsername: %s\n\t\tPassword (Hex): %s\n", username, Utils.byteToHex(password));
+      List<MovementDto> movements = databaseManager.getMovements(username, password, timestamp);
 
-      JsonArrayBuilder expenses = databaseManager.getMovements(username, password, timestamp);
-
-      JsonObject responseJson = Json.createObjectBuilder().add("movements", expenses).build();
-
-      responseObserver.onNext(crypto.encrypt(GetMovementsResponse.newBuilder().setResponse(
-        ByteString.copyFrom(Utils.serializeJson(responseJson))).build()
-      ));
+      responseObserver.onNext(GetMovementsResponse.newBuilder().addAllMovements(
+        movements.stream().map(m -> GetMovementsResponse.Movement.newBuilder()
+          .setId(m.movementRef().toString())
+          .setCurrency(m.currency())
+          .setDate(m.date().toString())
+          .setValue(m.amount().toString())
+          .setDescription(m.description())
+          .build()
+        ).toList()
+      ).build());
       responseObserver.onCompleted();
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: get account movements successful");
@@ -233,63 +221,22 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
     }
   }
 
-  @Deprecated
-  public void addExpense(AddExpenseRequest request, StreamObserver<AddExpenseResponse> responseObserver) {
-    try {
-      if (isDebug())
-        System.out.println("\tDatabaseServerImpl: add expense");
-
-      if (!crypto.check(request))
-        throw new TamperedMessageException();
-      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-      String username = requestJson.getString("username");
-      byte[] password = crypto.decryptPassword(requestJson.getString("password"));
-      LocalDateTime date = LocalDateTime.parse(requestJson.getString("date"));
-      BigDecimal amount = new BigDecimal(requestJson.getString("amount"));
-      String description = requestJson.getString("description");
-      OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
-
-      if (isDebug())
-        System.out.printf(
-          "\t\tUsername: %s\n\t\tPassword (Hex): %s\n\t\tDate: %s\n\t\tAmount: %s\n\t\tDescription: %s\n", username,
-          Utils.byteToHex(password), date, amount, description);
-
-      // databaseManager.addExpense(username, password, date, amount, description,
-      // timestamp);
-
-      responseObserver.onNext(crypto.encrypt(AddExpenseResponse.newBuilder().build()));
-      responseObserver.onCompleted();
-      if (isDebug())
-        System.out.println("\tDatabaseServerImpl: add expense successful");
-    } catch (Exception e) {
-      responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
-    }
-  }
-
-  public void orderPayment(OrderPaymentRequest request, StreamObserver<OrderPaymentResponse> responseObserver) {
+  public void orderPayment(OrderPaymentRequest request, StreamObserver<Ack> responseObserver) {
     try {
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: order payment");
 
-      if (!crypto.check(request))
-        throw new TamperedMessageException();
-      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-      String username = requestJson.getString("username");
-      byte[] password = crypto.decryptPassword(requestJson.getString("password"));
-      LocalDateTime date = LocalDateTime.parse(requestJson.getString("date"));
-      BigDecimal amount = new BigDecimal(requestJson.getString("amount"));
-      String description = requestJson.getString("description");
-      String recipient = requestJson.getString("recipient");
-      OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
-
-      if (isDebug())
-        System.out.printf(
-          "\t\tUsername: %s\n\t\tPassword (Hex): %s\n\t\tRecipient: %s\n\t\tDate: %s\n\t\tAmount: %s\n\t\tDescription: %s\n",
-          username, Utils.byteToHex(password), recipient, date, amount, description);
+      String username = request.getName();
+      byte[] password = request.getPassword().toByteArray();
+      LocalDateTime date = LocalDateTime.parse(request.getDate());
+      BigDecimal amount = new BigDecimal(request.getAmount());
+      String description = request.getDescription();
+      String recipient = request.getRecipient();
+      OffsetDateTime timestamp = OffsetDateTime.parse(request.getTimestamp());
 
       databaseManager.orderPayment(username, password, date, amount, description, recipient, timestamp);
 
-      responseObserver.onNext(crypto.encrypt(OrderPaymentResponse.newBuilder().build()));
+      responseObserver.onNext(Ack.getDefaultInstance());
       responseObserver.onCompleted();
       if (isDebug())
         System.out.println("\tDatabaseServerImpl: order payment successful");

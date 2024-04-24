@@ -6,15 +6,18 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import java.util.*;
 
 public class DatabaseServerCryptographicInterceptor implements ServerInterceptor {
-  Map<Class, List<String>> queue = new HashMap<>();
-  public boolean isQueued(Class requestClass) {
-      return !queue.get(requestClass).isEmpty();
+  Map<String, List<String>> queue = new HashMap<>();
+  public boolean isNotQueued(String requestClass) {
+      return queue.get(requestClass).isEmpty();
   }
-  public String popFromQueue(Class requestClass) {
-      return queue.get(requestClass).remove(0);
-  }
-  public String getFromQueue(Class requestClass) {
+  public String getFromQueue(String requestClass) {
       return queue.get(requestClass).get(0);
+  }
+
+  public String getClientHash(String methodName) {
+    if (isNotQueued(methodName))
+      throw new RuntimeException();
+    return getFromQueue(methodName);
   }
 
   @Override
@@ -41,16 +44,40 @@ public class DatabaseServerCryptographicInterceptor implements ServerInterceptor
       }
     };
     ServerCall.Listener<ReqT> listener = next.startCall(wrapperCall, headers);
-    return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(listener) {
+
+    String addressHash = Utils.byteToHex(Objects.requireNonNull(
+      call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes()
+    );
+    String fullMethodName = call.getMethodDescriptor().getFullMethodName();
+    if (queue.get(fullMethodName) == null) {
+      ArrayList<String> list = new ArrayList<>();
+      list.add(addressHash);
+      queue.put(fullMethodName, list);
+    } else queue.get(fullMethodName).add(addressHash);
+
+    return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(listener)  {
+      private boolean cached = false;
+      private void cacheClient() {
+        cached = true;
+      }
+      private void clearClientCache() {
+        if (cached) queue.get(fullMethodName).remove(0);
+        cached = false;
+      }
       @Override
       public void onMessage(ReqT message) {
-        String clientAddress = Utils.byteToHex(Objects.requireNonNull(call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes());
-          if (queue.get(message.getClass()) == null) {
-            ArrayList<String> list = new ArrayList<>();
-            list.add(clientAddress);
-            queue.put(message.getClass(), list);
-          } else queue.get(message.getClass()).add(clientAddress);
-          listener.onMessage(message);
+        cacheClient();
+        listener.onMessage(message);
+      }
+      @Override
+      public void onCancel() {
+        clearClientCache();
+        super.onCancel();
+      }
+      @Override
+      public void onComplete() {
+        clearClientCache();
+        super.onComplete();
       }
     };
   }
