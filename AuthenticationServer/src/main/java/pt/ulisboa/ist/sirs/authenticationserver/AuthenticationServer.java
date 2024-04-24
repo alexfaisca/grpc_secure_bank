@@ -39,7 +39,7 @@ public class AuthenticationServer {
       crypto, namingState, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug
     ).build();
 
-    final BindableService AuthenticationServerService = new AuthenticationServerImpl(state, crypto, debug);
+    final BindableService AuthenticationServerService = (new AuthenticationServerImpl(state, crypto, debug)).service;
     final BindableService NamingServerService = (new NamingServerImpl(namingState, namingCrypto, debug)).service;
 
     ServerCredentials tlsBuilder = TlsServerCredentials.create(new File(args.get(4)), new File(args.get(5)));

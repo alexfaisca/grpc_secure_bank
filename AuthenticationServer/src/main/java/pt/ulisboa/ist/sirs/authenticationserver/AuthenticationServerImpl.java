@@ -1,27 +1,43 @@
 package pt.ulisboa.ist.sirs.authenticationserver;
 
 import com.google.protobuf.ByteString;
+import io.grpc.BindableService;
+import io.grpc.ServerServiceDefinition;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import pt.ulisboa.ist.sirs.authenticationserver.dto.AuthTicket;
+import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AbstractCryptographicAuthenticationServiceImpl;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
+import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc.AuthenticationServerServiceImplBase;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
-import pt.ulisboa.ist.sirs.utils.Utils;
 
-import javax.json.*;
 import java.time.OffsetDateTime;
 
 public final class AuthenticationServerImpl extends AuthenticationServerServiceImplBase {
+  private abstract static class AuthenticationServiceImpl extends AbstractCryptographicAuthenticationServiceImpl implements BindableService {
+    @Override
+    public abstract ServerServiceDefinition bindService();
+  }
   private final boolean debug;
   private final AuthenticationServerState state;
   private final AuthenticationServerCryptographicManager crypto;
+  public final BindableService service;
 
   public AuthenticationServerImpl(AuthenticationServerState state, AuthenticationServerCryptographicManager crypto,
       boolean debug) {
+    final AuthenticationServerImpl serverImpl = this;
     this.debug = debug;
     this.state = state;
     this.crypto = crypto;
+    this.service = new AuthenticationServiceImpl() {
+      @Override
+      public ServerServiceDefinition bindService() {
+        return super.bindService(crypto, serverImpl);
+      }
+    };
   }
 
   private boolean isDebug() {
@@ -33,22 +49,19 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
     DiffieHellmanExchangeRequest request, StreamObserver<DiffieHellmanExchangeResponse> responseObserver
   ) {
     try {
-      String client = crypto.getClientHash(request);
-      request = crypto.decrypt(request);
+      String client = crypto.getClientHash(AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getFullMethodName());
 
       DiffieHellmanExchangeParameters params = state.diffieHellmanExchange(
         request.getClientPublic().toByteArray(), client
       );
 
-      responseObserver.onNext(crypto.encrypt(DiffieHellmanExchangeResponse.newBuilder()
+      responseObserver.onNext(DiffieHellmanExchangeResponse.newBuilder()
         .setServerPublic(ByteString.copyFrom(params.publicKey()))
         .setParameters(ByteString.copyFrom(params.parameters()))
-        .build()));
+        .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      System.out.println(e.getMessage());
-      e.printStackTrace();
-      responseObserver.onError(e);
+      responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
     }
   }
 
@@ -59,25 +72,27 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
     try {
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: deserialize and parse request");
-      String client = crypto.getClientHash(request);
-      JsonObject requestJson = Utils.deserializeJson(crypto.decrypt(request).getRequest().toByteArray());
-      String source = requestJson.getString("source");
-      OffsetDateTime timestamp = OffsetDateTime.parse(requestJson.getString("timestampString"));
+      String client = crypto.getClientHash(AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName());
+      String source = request.getSource();
+      OffsetDateTime timestamp = OffsetDateTime.parse(request.getTimeStamp());
 
-      if (isDebug())
-        System.out.println("\tAuthenticationServerImpl: delegate");
-      byte[] ticket = state.authenticate(source, client, timestamp);
+      AuthTicket ticket = state.authenticate(source, client, timestamp);
 
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: serialize and send response");
-      responseObserver.onNext(crypto.encrypt(
-        AuthenticateResponse.newBuilder().setResponse(ByteString.copyFrom(ticket)).build()
-      ));
+      responseObserver.onNext(
+        AuthenticateResponse.newBuilder()
+         .setAddress(ticket.address())
+        .setPort(ticket.port())
+        .setTimeStamp(ticket.timeStamp().toString())
+        .setSessionKey(ByteString.copyFrom(ticket.sessionKey()))
+        .setSessionIV(ByteString.copyFrom(ticket.sessionIV()))
+        .setQualifier(ticket.qualifier())
+        .setTicket(ByteString.copyFrom(ticket.ticket()))
+      .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      System.out.println(e.getMessage());
-      e.printStackTrace();
-      responseObserver.onError(e);
+      responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
     }
   }
 }

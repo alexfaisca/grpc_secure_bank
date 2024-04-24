@@ -12,11 +12,19 @@ message DiffieHellmanExchangeResponse {
 }
 
 message AuthenticateRequest {
-  bytes request = 1;
+  string source = 1;
+  string target = 2;
+  string timeStamp = 3;
 }
 
 message AuthenticateResponse {
-  bytes response = 1;
+  string address = 1;
+  int32 port = 2;
+  string timeStamp = 3;
+  bytes sessionKey = 4;
+  bytes sessionIV = 5;
+  string qualifier = 6;
+  bytes ticket = 7;
 }
 
 service AuthenticationServerService {

@@ -83,7 +83,7 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
         throw new TamperedMessageException();
 
       // Store session key and session iv
-      crypto.createSession(Utils.hexToByte(ticketJson.getString("sessionKey")),  Utils.hexToByte(ticketJson.getString("sessionIv")));
+      crypto.createSession(Utils.hexToByte(ticketJson.getString("sessionKey")),  Utils.hexToByte(ticketJson.getString("sessionIV")));
 
       // Needham-Schroeder step 4
       responseObserver.onNext(
@@ -93,7 +93,6 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      e.printStackTrace();
       responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
     }
   }
@@ -111,7 +110,6 @@ public final class DatabaseServerImpl extends DatabaseServiceImplBase {
       .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
-      e.printStackTrace();
       responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
     }
   }

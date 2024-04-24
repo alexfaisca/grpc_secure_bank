@@ -104,18 +104,15 @@ public final class DatabaseServerCryptographicStub extends AbstractStub<Database
       marshallerFor(OrderPaymentRequest.getDefaultInstance()),
       marshallerFor(Ack.getDefaultInstance())
   ).build();
-  private final DatabaseServiceGrpc.DatabaseServiceBlockingStub origStub;
   private final ClientCryptographicManager crypto;
 
   public DatabaseServerCryptographicStub(Channel channel, ClientCryptographicManager crypto) {
     super(channel);
-    this.origStub = DatabaseServiceGrpc.newBlockingStub(channel);
     this.crypto = crypto;
   }
 
   public DatabaseServerCryptographicStub(Channel channel, CallOptions callOptions, ClientCryptographicManager crypto) {
     super(channel, callOptions);
-    this.origStub = DatabaseServiceGrpc.newBlockingStub(channel);
     this.crypto = crypto;
   }
 

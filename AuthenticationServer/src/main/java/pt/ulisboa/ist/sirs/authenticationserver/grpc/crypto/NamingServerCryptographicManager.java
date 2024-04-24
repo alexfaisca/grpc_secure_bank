@@ -92,7 +92,7 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
     String client = getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeChallengeMethod().getFullMethodName());
     boolean result = false;
     if (nonces.containsKey(client)) {
-      result = nonces.get(client).equals(nonce.longValue());
+      result = nonces.get(client).equals(nonce);
       nonces.remove(client);
     }
     return result;

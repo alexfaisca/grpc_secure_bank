@@ -1,5 +1,6 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc;
 
+import pt.ulisboa.ist.sirs.authenticationserver.dto.AuthTicket;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
@@ -106,7 +107,7 @@ public final class AuthenticationService extends AbstractAuthServerService {
     );
   }
 
-  public synchronized byte[] authenticate(
+  public synchronized AuthTicket authenticate(
     String source, String qualifier, String target, String address, Integer port, OffsetDateTime timestamp
   ) throws Exception {
     if (isDebug())
@@ -117,40 +118,30 @@ public final class AuthenticationService extends AbstractAuthServerService {
     if (isDebug())
       System.out.println("\t\t\tAuthenticationService: generating session key");
 
-    String sessionKeyHex = Utils.byteToHex(Operations.generateSessionKey());
+    byte[] sessionKey = Operations.generateSessionKey();
 
-    String sessionIvHex = Utils.byteToHex(
-      Operations.generateIV(
+    byte[] sessionIV = Operations.generateIV(
         new Random().nextInt(),
-        Utils.hexToByte(sessionKeyHex),
+        sessionKey,
         Utils.byteToHex(
-          Operations.hash(ByteBuffer.allocate(Integer.BYTES).putInt(new Random().nextInt()).array()))
-    ));
+          Operations.hash(ByteBuffer.allocate(Long.BYTES).putLong(new Random().nextLong()).array()))
+    );
 
     if (isDebug())
       System.out.println("\t\t\tAuthenticationService: generating target ticket");
 
     if (isDebug())
       System.out.println("\t\t\tAuthenticationService: serializing ticket");
-
-    return Utils.serializeJson(
-      Json.createObjectBuilder()
-        .add("qualifier", qualifier)
-        .add("address", address)
-        .add("port", port)
-        .add("timestampString", timestamp.toString())
-        .add("sessionKey", sessionKeyHex)
-        .add("sessionIv", sessionIvHex)
-        .add("targetTicket", Utils.byteToHex(
-          Operations.encryptData(
-            Base.readSecretKey(crypto.getTargetServerSymmetricKeyPath(target)),
-            Utils.serializeJson(
-              Json.createObjectBuilder()
-              .add("source", source)
-              .add("sessionKey", sessionKeyHex).add("sessionIv", sessionIvHex).build()
-            ),
-            Base.readIv(crypto.getTargetServerIVPath(target)))))
-        .build());
+    return new AuthTicket(qualifier, address, port, timestamp, sessionKey, sessionIV, Operations.encryptData(
+      Base.readSecretKey(crypto.getTargetServerSymmetricKeyPath(target)),
+      Utils.serializeJson(
+        Json.createObjectBuilder()
+          .add("source", source)
+          .add("sessionKey", Utils.byteToHex(sessionKey))
+          .add("sessionIV", Utils.byteToHex(sessionIV))
+      .build()),
+      Base.readIv(crypto.getTargetServerIVPath(target))
+    ));
   }
 
   public void register() {

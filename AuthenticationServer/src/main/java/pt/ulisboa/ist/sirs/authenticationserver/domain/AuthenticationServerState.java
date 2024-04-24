@@ -1,5 +1,6 @@
 package pt.ulisboa.ist.sirs.authenticationserver.domain;
 
+import pt.ulisboa.ist.sirs.authenticationserver.dto.AuthTicket;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.TargetServer;
 import pt.ulisboa.ist.sirs.authenticationserver.enums.Service;
@@ -80,7 +81,7 @@ public class AuthenticationServerState {
     }
   }
 
-  public synchronized byte[] authenticate(String source, String client, OffsetDateTime timestamp) {
+  public synchronized AuthTicket authenticate(String source, String client, OffsetDateTime timestamp) {
     if (isDebug())
       System.out.printf("\t\tAuthenticationServerState: authenticating %s\n", source);
     try {

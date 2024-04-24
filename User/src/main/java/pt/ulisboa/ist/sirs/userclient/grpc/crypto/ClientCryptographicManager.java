@@ -33,6 +33,14 @@ public class ClientCryptographicManager extends ClientCryptographicCore implemen
     return "resources/crypto/session/iv";
   }
 
+  public static String buildAuthKeyPath() {
+    return "resources/crypto/client/symmetricKey";
+  }
+
+  public static String buildAuthIVPath() {
+    return "resources/crypto/client/iv";
+  }
+
   public static String buildSessionPublicKeyPath() {
     return "resources/crypto/session/publicKey";
   }
@@ -59,5 +67,13 @@ public class ClientCryptographicManager extends ClientCryptographicCore implemen
 
   public byte[] decrypt(byte[] object) throws Exception {
     return decryptByteArray(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
+
+  public byte[] decryptAuth(byte[] object) throws Exception {
+    return decryptByteArrayUnsigned(object, buildAuthKeyPath(), buildAuthIVPath());
+  }
+
+  public byte[] encryptAuth(byte[] object) throws Exception {
+    return encryptByteArrayUnsigned(object, buildAuthKeyPath(), buildAuthIVPath());
   }
 }
