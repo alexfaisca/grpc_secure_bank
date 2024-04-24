@@ -6,14 +6,18 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import java.util.*;
 
 public class ServerCryptographicInterceptor implements ServerInterceptor {
-  private static final class ClassWizard<T> {
-    private final Class<T> type;
-    public ClassWizard(Class<T> m) {
-      this.type = m;
-    }
-    public Class<T> get() {
-      return this.type;
-    }
+  Map<String, List<String>> queueS = new HashMap<>();
+  public boolean isNotQueued(String methodName) {
+    return queueS.get(methodName).isEmpty();
+  }
+  public String getFromQueue(String methodName) {
+    return queueS.get(methodName).get(0);
+  }
+
+  public String getClientHash(String methodName) {
+    if (isNotQueued(methodName))
+      throw new RuntimeException();
+    return getFromQueue(methodName);
   }
   Map<Class, List<String>> queue = new HashMap<>();
 
@@ -58,11 +62,21 @@ public class ServerCryptographicInterceptor implements ServerInterceptor {
           }
     };
     ServerCall.Listener<ReqT> listener = next.startCall(wrapperCall, headers);
+
+    String addressHash = Utils.byteToHex(Objects.requireNonNull(
+            call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes()
+    );
+    String fullMethodName = call.getMethodDescriptor().getFullMethodName();
+    if (queueS.get(fullMethodName) == null) {
+      ArrayList<String> list = new ArrayList<>();
+      list.add(addressHash);
+      queueS.put(fullMethodName, list);
+    } else queueS.get(fullMethodName).add(addressHash);
     return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(listener) {
       private Class clazz;
       private boolean cached = false;
       private void cacheClient(ReqT m) {
-        clazz = new ClassWizard<>(m.getClass()).get();
+        clazz = m.getClass();
         String addressHash = Utils.byteToHex(Objects.requireNonNull(
           call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes()
         );
@@ -74,7 +88,10 @@ public class ServerCryptographicInterceptor implements ServerInterceptor {
         cached = true;
       }
       private void clearCache() {
-        if (cached) queue.get(clazz).remove(0);
+        if (cached) {
+          queue.get(clazz).remove(0);
+          queueS.get(fullMethodName).remove(0);
+        }
         cached = false;
       }
       @Override

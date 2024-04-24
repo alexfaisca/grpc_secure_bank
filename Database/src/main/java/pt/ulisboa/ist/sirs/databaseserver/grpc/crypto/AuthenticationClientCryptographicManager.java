@@ -18,16 +18,32 @@ public class AuthenticationClientCryptographicManager extends AuthenticationClie
         throw new RuntimeException("Could not store client key");
   }
 
-  public String buildSessionKeyPath() {
-    return "resources/crypto/auth/symmetricKey";
+  public byte[] encryptByteArray(byte[] object) throws Exception {
+    return encryptByteArray(object, buildSessionKeyPath(), getPrivateKeyPath(), buildSessionIVPath());
   }
 
-  public String buildIVPath() {
-    return "resources/crypto/auth/iv";
+  public boolean checkByteArray(byte[] object) throws Exception {
+    return !checkByteArray(object, buildSessionKeyPath(), buildPublicKeyPath(), buildSessionIVPath());
+  }
+
+  public byte[] decryptByteArray(byte[] object) throws Exception {
+    return decryptByteArray(object, buildSessionKeyPath(), buildSessionIVPath());
+  }
+
+  public String getPrivateKeyPath() {
+    return "resources/crypto/self/privateKey";
   }
 
   public String buildPublicKeyPath() {
     return "resources/crypto/auth/publicKey";
+  }
+
+  public String buildSessionKeyPath() {
+    return "resources/crypto/auth/symmetricKey";
+  }
+
+  public String buildSessionIVPath() {
+    return "resources/crypto/auth/iv";
   }
 
 }

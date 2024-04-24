@@ -3,10 +3,10 @@ package pt.ulisboa.ist.sirs.databaseserver.grpc;
 import com.google.protobuf.ByteString;
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer;
-import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AuthenticationClientCryptographicManager;
+import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.NamingServerCryptographicStub;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
@@ -14,7 +14,6 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.json.Json;
 import javax.json.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -23,7 +22,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
-import java.util.List;
 
 public class DatabaseService {
   public static class DatabaseServiceBuilder {
@@ -76,15 +74,15 @@ public class DatabaseService {
   private final String address;
   private final Integer port;
   private final AuthenticationClientCryptographicManager crypto;
-  private final NamingServerServiceGrpc.NamingServerServiceBlockingStub stub;
-  public DatabaseService(DatabaseServiceBuilder builder) throws Exception {
+  private final NamingServerCryptographicStub stub;
+  public DatabaseService(DatabaseServiceBuilder builder) {
     this.debug = builder.debug;
     this.service = builder.service;
     this.qualifier = builder.qualifier;
     this.address = builder.address;
     this.port = builder.port;
     this.crypto = builder.crypto;
-    this.stub = NamingServerServiceGrpc.newBlockingStub(builder.namingServerChannel);
+    this.stub = new NamingServerCryptographicStub(builder.namingServerChannel, new AuthenticationClientCryptographicManager());
     this.encryptedKeyExchange();
     this.register();
   }
@@ -113,7 +111,7 @@ public class DatabaseService {
     try {
       crypto.initializeAuthCache();
       NamingServer.InitiateEncryptedKeyExchangeResponse initiateResponse = stub.initiateEncryptedKeyExchange(
-        NamingServer.InitiateEncryptedKeyExchangeRequest.getDefaultInstance()
+        NamingServer.Ack.getDefaultInstance()
       );
       CertificateFactory certGen = CertificateFactory.getInstance("X.509");
       X509Certificate cert = (X509Certificate) certGen.generateCertificate(
@@ -180,63 +178,41 @@ public class DatabaseService {
       byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
 
       Utils.writeBytesToFile(aesKey.getEncoded(), crypto.buildSessionKeyPath());
-      Utils.writeBytesToFile(iv, crypto.buildIVPath());
-
-      int random = Base.generateRandom(Integer.MAX_VALUE).intValue();
-      int serverChallenge = Utils.byteArrayToInt(Operations.decryptData(
-        Base.readSecretKey(crypto.buildSessionKeyPath()),
-        serverResponse.getServerChallenge().toByteArray(),
-        Base.readIv(crypto.buildIVPath())
-      ));
+      Utils.writeBytesToFile(iv, crypto.buildSessionIVPath());
+      long serverChallenge = Utils.byteArrayToLong(Operations.decryptData(aesKey, serverResponse.getServerChallenge().toByteArray(), iv));
+      long random = Base.generateRandom(Long.MAX_VALUE);
       NamingServer.EncryptedKeyExchangeChallengeResponse challengeResponse = stub.encryptedKeyExchangeChallenge(
-        NamingServer.EncryptedKeyExchangeChallengeRequest.newBuilder().setFinalizeClient(
-          ByteString.copyFrom(Operations.encryptData(
-            Base.readSecretKey(crypto.buildSessionKeyPath()),
-            Utils.serializeJson(Json.createObjectBuilder()
-              .add("serverChallenge",  serverChallenge + 1)
-              .add("clientChallenge", random)
-            .build()),
-            Base.readIv(crypto.buildIVPath())
-        ))).build()
-      );
+        NamingServer.EncryptedKeyExchangeChallengeRequest.newBuilder()
+          .setClientChallenge(random)
+          .setServerChallenge(serverChallenge + 1)
+      .build());
 
-      int clientChallenge = Utils.byteArrayToInt(Operations.decryptData(
-        Base.readSecretKey(crypto.buildSessionKeyPath()),
-        challengeResponse.getFinalizeServer().toByteArray(),
-        Base.readIv(crypto.buildIVPath())
-      ));
-      if (clientChallenge != random + 1)
+      if (challengeResponse.getClientChallenge() != random + 1)
         throw new TamperedMessageException();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public void register() throws Exception {
+  public void register() {
     if (isDebug())
       System.out.println("\t\t\tDatabaseService: Registering service");
-    NamingServer.RegisterResponse ignore = stub.register(NamingServer.RegisterRequest.newBuilder()
-      .setRequest(ByteString.copyFrom(Operations.encryptData(
-        Base.readSecretKey(crypto.buildSessionKeyPath()),
-        Utils.serializeJson(
-          Utils.createJson(
-            List.of("service", "address", "port", "qualifier"),
-            List.of(NamingServer.Services.DatabaseServer.name(), getServerAddress(), getServerPort().toString(), getServerName()))),
-        Utils.readBytesFromFile(crypto.buildIVPath())
-    ))).build());
+    NamingServer.Ack ignore = stub.register(
+      NamingServer.RegisterRequest.newBuilder()
+        .setService(NamingServer.Services.DatabaseServer)
+        .setAddress(getServerAddress())
+        .setPort(getServerPort())
+        .setQualifier(getServerName())
+    .build());
   }
 
-  public void delete() throws Exception {
+  public void delete() {
     if (isDebug())
       System.out.println("\t\t\tDatabaseService: Deleting service");
-    NamingServer.DeleteResponse ignore = stub.delete(NamingServer.DeleteRequest.newBuilder()
-      .setRequest(ByteString.copyFrom(Operations.encryptData(
-        Base.readSecretKey(crypto.buildSessionKeyPath()),
-        Utils.serializeJson(
-          Utils.createJson(
-            List.of("service", "address", "port", "qualifier"),
-            List.of(NamingServer.Services.DatabaseServer.name(), getServerAddress(), getServerPort().toString(), getServerName()))),
-        Utils.readBytesFromFile(crypto.buildIVPath())
-    ))).build());
+    NamingServer.Ack ignore = stub.delete(
+      NamingServer.DeleteRequest.newBuilder()
+      .setService(NamingServer.Services.DatabaseServer)
+      .setQualifier(getServerName())
+    .build());
   }
 }

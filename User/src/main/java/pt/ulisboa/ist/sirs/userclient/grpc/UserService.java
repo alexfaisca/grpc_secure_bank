@@ -211,7 +211,7 @@ public class UserService {
             ).add(
               "publicKey", Utils.byteToHex(Utils.readBytesFromFile(ClientCryptographicManager.buildSelfPublicKeyPath()))
             ).build()
-        ))).build()));
+      ))).build()));
 
       if (!crypto.check(stillAliveResponse))
         throw new RuntimeException("Authenticate response tampered");

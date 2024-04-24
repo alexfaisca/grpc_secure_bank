@@ -6,8 +6,7 @@ enum Services {
     DatabaseServer = 1;
 }
 
-message InitiateEncryptedKeyExchangeRequest {
-}
+message Ack {}
 
 message InitiateEncryptedKeyExchangeResponse {
   bytes serverCert = 1;
@@ -25,46 +24,44 @@ message EncryptedKeyExchangeResponse {
 }
 
 message EncryptedKeyExchangeChallengeRequest {
-  bytes finalizeClient = 1;
+  int64 serverChallenge = 1;
+  int64 clientChallenge = 2;
 }
 
 message EncryptedKeyExchangeChallengeResponse {
-  bytes finalizeServer = 1;
+  int64 clientChallenge = 1;
 }
 
 message RegisterRequest {
-  bytes request = 1;
-}
-
-message RegisterResponse {
-  bytes response = 1;
+  Services service = 1;
+  string address = 2;
+  int32 port = 3;
+  string qualifier = 4;
 }
 
 message LookupRequest {
-  bytes request = 1;
+  Services service = 1;
 }
 
 message LookupResponse {
   message ServerEntryResponse {
     string address = 1;
-    string qualifier = 2;
+    int32 port = 2;
+    string qualifier = 3;
   }
-  bytes response = 1;
+  repeated ServerEntryResponse servers = 1;
 }
 
 message DeleteRequest {
-  bytes request = 1;
-}
-
-message DeleteResponse {
-  bytes response = 1;
+  Services service = 1;
+  string qualifier = 2;
 }
 
 service NamingServerService {
-  rpc initiateEncryptedKeyExchange(InitiateEncryptedKeyExchangeRequest) returns (InitiateEncryptedKeyExchangeResponse);
+  rpc initiateEncryptedKeyExchange(Ack) returns (InitiateEncryptedKeyExchangeResponse);
   rpc encryptedKeyExchange(EncryptedKeyExchangeRequest) returns (EncryptedKeyExchangeResponse);
   rpc encryptedKeyExchangeChallenge(EncryptedKeyExchangeChallengeRequest) returns (EncryptedKeyExchangeChallengeResponse);
-  rpc register(RegisterRequest) returns (RegisterResponse);
+  rpc register(RegisterRequest) returns (Ack);
   rpc lookup(LookupRequest) returns (LookupResponse);
-  rpc delete(DeleteRequest) returns (DeleteResponse);
+  rpc delete(DeleteRequest) returns (Ack);
 }

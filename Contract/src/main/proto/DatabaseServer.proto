@@ -2,8 +2,7 @@ syntax = "proto3";
 
 package pt.ulisboa.ist.sirs.contract.databaseserver;
 
-message Ack {
-}
+message Ack {}
 
 message AuthenticateRequest {
   bytes request = 1;

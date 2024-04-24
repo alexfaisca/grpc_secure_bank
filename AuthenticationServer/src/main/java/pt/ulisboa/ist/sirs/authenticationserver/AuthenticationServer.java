@@ -28,9 +28,10 @@ public class AuthenticationServer {
 
     final String authenticationServerAddress = args.get(2);
     final int authenticationServerPort = Integer.parseInt(args.get(3));
-    final ServerCryptographicInterceptor interceptor = new ServerCryptographicInterceptor();
-    final AuthenticationServerCryptographicManager crypto = new AuthenticationServerCryptographicManager(interceptor);
-    final NamingServerCryptographicManager namingCrypto = new NamingServerCryptographicManager(interceptor);
+    final ServerCryptographicInterceptor authInterceptor = new ServerCryptographicInterceptor();
+    final ServerCryptographicInterceptor namingInterceptor = new ServerCryptographicInterceptor();
+    final AuthenticationServerCryptographicManager crypto = new AuthenticationServerCryptographicManager(authInterceptor);
+    final NamingServerCryptographicManager namingCrypto = new NamingServerCryptographicManager(namingInterceptor);
     this.namingState = new NamingServerState.NamingServerStateBuilder(
       namingCrypto, args.get(0), args.get(1), authenticationServerAddress, authenticationServerPort, debug
     ).build();
@@ -39,12 +40,12 @@ public class AuthenticationServer {
     ).build();
 
     final BindableService AuthenticationServerService = new AuthenticationServerImpl(state, crypto, debug);
-    final BindableService NamingServerService = new NamingServerImpl(namingState, namingCrypto, debug);
+    final BindableService NamingServerService = (new NamingServerImpl(namingState, namingCrypto, debug)).service;
 
     ServerCredentials tlsBuilder = TlsServerCredentials.create(new File(args.get(4)), new File(args.get(5)));
     this.server = Grpc.newServerBuilderForPort(authenticationServerPort, tlsBuilder)
-        .addService(ServerInterceptors.intercept(AuthenticationServerService, interceptor))
-        .addService(ServerInterceptors.intercept(NamingServerService, interceptor))
+        .addService(ServerInterceptors.intercept(AuthenticationServerService, authInterceptor))
+        .addService(ServerInterceptors.intercept(NamingServerService, namingInterceptor))
         .build();
   }
 

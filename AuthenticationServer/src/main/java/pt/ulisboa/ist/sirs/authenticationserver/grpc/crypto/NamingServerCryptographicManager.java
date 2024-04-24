@@ -1,15 +1,53 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
-import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer.*;
+import com.google.protobuf.Message;
+import io.grpc.MethodDescriptor;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class NamingServerCryptographicManager extends NamingServerCryptographicCore {
+  public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForNamingServer(T message, String fullMethodName) {
+    return new MethodDescriptor.Marshaller<>() {
+      private final String methodName = fullMethodName;
+      @Override
+      public InputStream stream(T value) {
+        try {
+          return new ByteArrayInputStream(encryptByteArray(value.toByteArray(), methodName));
+        } catch (Exception e) {
+          throw new StatusRuntimeException(Status.INTERNAL.withDescription(Arrays.toString(e.getStackTrace())));
+        }
+      }
+
+      @Override
+      @SuppressWarnings("unchecked")
+      public T parse(InputStream inputStream) {
+        try {
+          byte[] request = inputStream.readAllBytes();
+          if (checkByteArray(request, methodName))
+            throw new TamperedMessageException();
+          return (T) message.newBuilderForType().mergeFrom(decryptByteArray(request, methodName)).build();
+        } catch (IOException e) {
+          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+  }
   private final ServerCryptographicInterceptor crypto;
-  private final Map<String, Integer> nonces = new HashMap<>();
+  private final Map<String, Long> nonces = new HashMap<>();
   private static final String CLIENT_CACHE_DIR = "resources/crypto/server/";
 
   public NamingServerCryptographicManager(ServerCryptographicInterceptor crypto) {
@@ -24,16 +62,9 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
       return Base.CryptographicCore.getPrivateKeyPath();
   }
 
-  public void initializeClientCache(String client) {
-    File clientDirectory = new File(CLIENT_CACHE_DIR + client + "/");
-    if (!clientDirectory.exists())
-      if (!clientDirectory.mkdirs())
-        throw new RuntimeException("Could not store client key");
-  }
-
   public boolean checkServerCache(String client) {
     File clientDirectory = new File(CLIENT_CACHE_DIR + client + "/");
-    return clientDirectory.exists();
+    return !clientDirectory.exists();
   }
 
   public String buildSymmetricKeyPath(String client) {
@@ -48,62 +79,46 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
       return CLIENT_CACHE_DIR + client + "/publicKey";
   }
 
-  public <Req> String getClientHash(Req request) {
-    return crypto.getClientHash(request);
+  public String getClientHash(String methodName) {
+    return crypto.getClientHash(methodName);
   }
 
-  public void setNonce(Integer nonce) {
-      nonces.put(crypto.getFromQueue(EncryptedKeyExchangeRequest.class), nonce);
+  public void setNonce(Long nonce) {
+    String client = getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeMethod().getFullMethodName());
+    nonces.put(client, nonce);
   }
 
-  public Integer getNonce() {
-      return nonces.get(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class));
-  }
-
-  public boolean checkNonce(Integer nonce) {
+  public boolean checkNonce(Long nonce) {
+    String client = getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeChallengeMethod().getFullMethodName());
     boolean result = false;
-    if (nonces.containsKey(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class))) {
-      result = nonces.get(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class)).equals(nonce);
-      nonces.remove(crypto.getFromQueue(EncryptedKeyExchangeChallengeRequest.class));
+    if (nonces.containsKey(client)) {
+      result = nonces.get(client).equals(nonce.longValue());
+      nonces.remove(client);
     }
     return result;
   }
 
-  public <P> P encrypt(P object) throws Exception {
-    return encrypt(object, "", "");
+  public void validateSession(byte[] clientPublicKey) {
+    String client = getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeMethod().getFullMethodName());
+    File clientDirectory = new File("resources/crypto/server/" + client + "/");
+    if (!clientDirectory.exists())
+      if (!clientDirectory.mkdirs())
+        throw new RuntimeException("Could not store client key");
+    Utils.writeBytesToFile(clientPublicKey, buildPublicKeyPath(client));
   }
 
-  public <P> P decrypt(P object) throws Exception {
-    return decrypt(object, "", "");
+  public byte[] encryptByteArray(byte[] object, String methodName) throws Exception {
+    String client = getClientHash(methodName);
+    return encryptByteArray(object, buildSymmetricKeyPath(client), getPrivateKeyPath(), buildIVPath(client));
   }
 
-  public RegisterResponse encrypt(RegisterResponse object) throws Exception {
-    String client = crypto.getFromQueue(RegisterRequest.class);
-    return object;
+  public boolean checkByteArray(byte[] object, String methodName) throws Exception {
+    String client = getClientHash(methodName);
+    return !checkByteArray(object, buildSymmetricKeyPath(client), buildPublicKeyPath(client), buildIVPath(client));
   }
 
-  public RegisterRequest decrypt(RegisterRequest object) throws Exception {
-    String client = crypto.getFromQueue(RegisterRequest.class);
-    return decrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
-  }
-
-  public LookupResponse encrypt(LookupResponse object) throws Exception {
-    String client = crypto.getFromQueue(LookupRequest.class);
-    return encrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
-  }
-
-  public LookupRequest decrypt(LookupRequest object) throws Exception {
-    String client = crypto.getFromQueue(LookupRequest.class);
-    return decrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
-  }
-
-  public DeleteResponse encrypt(DeleteResponse object) throws Exception {
-    String client = crypto.getFromQueue(DeleteRequest.class);
-    return encrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
-  }
-
-  public DeleteRequest decrypt(DeleteRequest object) throws Exception {
-    String client = crypto.getFromQueue(DeleteRequest.class);
-    return decrypt(object, buildSymmetricKeyPath(client), buildIVPath(client));
+  public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
+    String client = getClientHash(methodName);
+    return decryptByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 }

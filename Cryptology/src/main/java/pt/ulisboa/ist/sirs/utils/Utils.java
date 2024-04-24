@@ -65,6 +65,30 @@ public class Utils {
             ((value[3] & 0xFF));
   }
 
+  public static long byteArrayToLong(byte[] value) {
+    return  ((long) (value[0] & 0xFF) << 56) |
+            ((long) (value[1] & 0xFF) << 48) |
+            ((long) (value[2] & 0xFF) << 40) |
+            ((long) (value[3] & 0xFF) << 32) |
+            ((long) (value[4] & 0xFF) << 24) |
+            ((long) (value[5] & 0xFF) << 16) |
+            ((long) (value[6] & 0xFF) << 8) |
+            ((long) (value[7] & 0xFF));
+  }
+
+  public static byte[] longToByteArray(long data) {
+    return new byte[]{
+            (byte) (data >>> 56),
+            (byte) (data >>> 48),
+            (byte) (data >>> 40),
+            (byte) (data >>> 32),
+            (byte) (data >>> 24),
+            (byte) (data >>> 16),
+            (byte) (data >>> 8),
+            (byte) (data),
+    };
+  }
+
   public static byte[] serializeJson(JsonObject json) {
     return json.toString().getBytes();
   }
