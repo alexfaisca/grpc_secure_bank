@@ -5,6 +5,7 @@ import io.grpc.*;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.databaseserver.dto.KeyParamsDto;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AuthenticationClientCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.NamingServerCryptographicStub;
 import pt.ulisboa.ist.sirs.utils.Utils;
@@ -14,7 +15,6 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.json.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.security.*;
@@ -59,11 +59,12 @@ public class DatabaseService {
               .build();
     }
 
-    public DatabaseService build() throws Exception {
+    public DatabaseService build() {
       this.namingServerChannel = Grpc.newChannelBuilderForAddress(
-              this.namingServerAddress,
-              this.namingServerPort,
-              this.credentials).build();
+        this.namingServerAddress,
+        this.namingServerPort,
+        this.credentials
+      ).build();
       return new DatabaseService(this);
     }
   }
@@ -154,13 +155,11 @@ public class DatabaseService {
        * Client uses server's public key for the first (and only) phase
        * of his part of the DH protocol.
        */
-      JsonObject paramsJson = Utils.deserializeJson(Operations.decryptData(
-        secretKey,
-        serverResponse.getServerParams().toByteArray(),
-        ephemeralIV
-      ));
+      KeyParamsDto params = crypto.unbundleKeyParams(
+        secretKey, serverResponse.getServerParams().toByteArray(), ephemeralIV
+      );
       KeyFactory clientKeyFac = KeyFactory.getInstance("DH");
-      X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(Utils.hexToByte(paramsJson.getString("serverPublic")));
+      X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(params.keySpecs());
       PublicKey serverPubKey = clientKeyFac.generatePublic(x509KeySpec);
 
       clientKeyAgree.doPhase(serverPubKey, true);
@@ -171,7 +170,7 @@ public class DatabaseService {
       // Instantiate AlgorithmParameters object from parameter encoding
       // obtained from server
       AlgorithmParameters aesParams = AlgorithmParameters.getInstance("AES");
-      aesParams.init(Utils.hexToByte(paramsJson.getString("parameters")));
+      aesParams.init(params.params());
       Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
       cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
       byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 14);

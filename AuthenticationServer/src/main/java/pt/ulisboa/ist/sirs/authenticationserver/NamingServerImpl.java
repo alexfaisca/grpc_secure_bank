@@ -21,7 +21,6 @@ import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.json.Json;
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -94,20 +93,13 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
         Operations.decryptData(secretKey, request.getClientParams().toByteArray(), ephemeralIV), client
       );
 
-      long random = Base.generateRandom(Long.MAX_VALUE);
-      crypto.setNonce(random);
       responseObserver.onNext(EncryptedKeyExchangeResponse.newBuilder().setServerParams(
         ByteString.copyFrom(Operations.encryptData(
-          secretKey,
-          Utils.serializeJson(Json.createObjectBuilder()
-            .add("serverPublic", Utils.byteToHex(parameters.publicKey()))
-            .add("parameters", Utils.byteToHex(parameters.parameters()))
-            .build()),
-          ephemeralIV
+          secretKey, crypto.bundleEKEParams(parameters.parameters(), parameters.publicKey()), ephemeralIV
       ))).setServerChallenge(
         ByteString.copyFrom(Operations.encryptData(
           Base.readSecretKey(crypto.buildSymmetricKeyPath(client)),
-          Utils.longToByteArray(random),
+          Utils.longToByteArray(crypto.initializeNonce()),
           Base.readIv(crypto.buildIVPath(client))
       ))).build());
       responseObserver.onCompleted();

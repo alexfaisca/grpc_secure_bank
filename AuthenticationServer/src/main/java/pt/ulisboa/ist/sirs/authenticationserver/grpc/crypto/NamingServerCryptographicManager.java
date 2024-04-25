@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class NamingServerCryptographicManager extends NamingServerCryptographicCore {
   public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForNamingServer(T message, String fullMethodName) {
@@ -83,9 +84,11 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
     return crypto.getClientHash(methodName);
   }
 
-  public void setNonce(Long nonce) {
+  public long initializeNonce() {
     String client = getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeMethod().getFullMethodName());
-    nonces.put(client, nonce);
+    long random = (new Random()).nextLong();
+    nonces.put(client, random);
+    return random;
   }
 
   public boolean checkNonce(Long nonce) {
@@ -120,5 +123,9 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
   public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
     String client = getClientHash(methodName);
     return decryptByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
+  }
+
+  public byte[] bundleEKEParams(byte[] params, byte[] publicKeySpecs) {
+    return Base.KeyManager.unbundleParams(params, publicKeySpecs);
   }
 }

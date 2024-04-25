@@ -1,6 +1,18 @@
 package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 
+import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.databaseserver.dto.KeyParamsDto;
+import pt.ulisboa.ist.sirs.dto.EKEParams;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import java.io.File;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 public class AuthenticationClientCryptographicManager extends AuthenticationClientCryptographicCore {
   public AuthenticationClientCryptographicManager() {
@@ -46,4 +58,12 @@ public class AuthenticationClientCryptographicManager extends AuthenticationClie
     return "resources/crypto/auth/iv";
   }
 
+  public KeyParamsDto unbundleKeyParams(SecretKey secretKey, byte[] bundle, byte[] ephemeralIV) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    EKEParams params = Base.KeyManager.unbundleParams(Operations.decryptData(
+            secretKey,
+            bundle,
+            ephemeralIV
+    ));
+    return new KeyParamsDto(params.params(), params.publicKeySpecs());
+  }
 }

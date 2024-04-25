@@ -1,11 +1,11 @@
 package pt.ulisboa.ist.sirs.cryptology;
 
+import pt.ulisboa.ist.sirs.dto.EKEParams;
 import pt.ulisboa.ist.sirs.dto.Ticket;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.json.JsonObject;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -23,11 +23,17 @@ public final class Base {
       System.arraycopy(sessionIV, 0, result, 64, 16);
       return result;
     }
-    static Ticket unbundleTicket(byte[] ticket) throws NoSuchAlgorithmException {
+    static Ticket unbundleTicket(byte[] ticket) {
       return new Ticket(Arrays.copyOfRange(ticket, 0, 32), Arrays.copyOfRange(ticket, 32, 64), Arrays.copyOfRange(ticket, 64, 80));
     }
-    static boolean checkHash(String source, byte[] hash) throws NoSuchAlgorithmException {
-      return Arrays.equals(Operations.hash(source.getBytes(StandardCharsets.UTF_8)), hash);
+    static byte[] unbundleParams(byte[] params, byte[] publicKeySpecs) {
+      byte[] result = new byte[18 + publicKeySpecs.length];
+      System.arraycopy(params, 0, result, 0, 18);
+      System.arraycopy(publicKeySpecs, 0, result, 18, publicKeySpecs.length);
+      return result;
+    }
+    static EKEParams unbundleParams(byte[] bundle) {
+      return new EKEParams(Arrays.copyOfRange(bundle, 0, 18), Arrays.copyOfRange(bundle, 18, bundle.length));
     }
   }
 
@@ -48,34 +54,11 @@ public final class Base {
       return "resources/crypto/self/privateKey";
     }
 
-    default boolean check(byte[] input, String secretKeyPath, String publicKeyPath, String ivPath)
-        throws Exception {
-      return Security.check(input, Base.readSecretKey(secretKeyPath), Base.readPublicKey(publicKeyPath),
-          Base.readIv(ivPath));
-    }
-
-    default JsonObject decrypt(byte[] input, String secretKeyPath, String ivPath)
-        throws Exception {
-      return Utils.deserializeJson(Security.unprotect(input, Base.readSecretKey(secretKeyPath), Base.readIv(ivPath)));
-    }
-
-    default byte[] encrypt(byte[] input, String secretKeyPath, String privateKeyPath, String ivPath)
-        throws Exception {
-      return Security.protect(input, Base.readSecretKey(secretKeyPath), Base.readPrivateKey(privateKeyPath),
-          Base.readIv(ivPath));
-    }
-
     final class Decrypter {
       public static boolean check(byte[] input, SecretKey secretKey, PublicKey publicKey, byte[] iv)
           throws Exception {
         return Security.check(input, secretKey, publicKey, iv);
       }
-
-      public static JsonObject decrypt(byte[] input, SecretKey secretKey, byte[] iv)
-          throws Exception {
-        return Utils.deserializeJson(Security.unprotect(input, secretKey, iv));
-      }
-
       public static byte[] decryptByteArray(byte[] input, SecretKey secretKey, byte[] iv)
               throws Exception {
         return Security.unprotect(input, secretKey, iv);
@@ -83,7 +66,7 @@ public final class Base {
     }
 
     final class Encrypter {
-      public static byte[] encrypt(byte[] input, SecretKey secretKey, PrivateKey privateKey, byte[] iv)
+      public static byte[] encryptByteArray(byte[] input, SecretKey secretKey, PrivateKey privateKey, byte[] iv)
           throws Exception {
         return Security.protect(input, secretKey, privateKey, iv);
       }

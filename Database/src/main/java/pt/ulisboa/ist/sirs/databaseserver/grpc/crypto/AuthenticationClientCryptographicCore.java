@@ -20,7 +20,7 @@ public class AuthenticationClientCryptographicCore implements Base.Cryptographic
   protected static byte[] encryptByteArray(
           byte[] message, String secretKeyPath, String privateKeyPath, String ivPath
   ) throws Exception {
-    return Encrypter.encrypt(
+    return Encrypter.encryptByteArray(
             message, Base.readSecretKey(secretKeyPath), Base.readPrivateKey(privateKeyPath), Base.readIv(ivPath)
     );
   }
