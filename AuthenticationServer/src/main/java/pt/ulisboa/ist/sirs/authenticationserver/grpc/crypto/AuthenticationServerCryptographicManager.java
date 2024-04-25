@@ -1,47 +1,11 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
-import com.google.protobuf.Message;
-import io.grpc.MethodDescriptor;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
-import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServerServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 public class AuthenticationServerCryptographicManager extends AuthenticationServerCryptographicCore implements Base.KeyManager {
-  public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForNamingServer(T message, String fullMethodName) {
-    return new MethodDescriptor.Marshaller<>() {
-      private final String methodName = fullMethodName;
-      @Override
-      public InputStream stream(T value) {
-        try {
-          return new ByteArrayInputStream(encryptByteArray(value.toByteArray(), methodName));
-        } catch (Exception e) {
-          throw new StatusRuntimeException(Status.INTERNAL.withDescription(Arrays.toString(e.getStackTrace())));
-        }
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public T parse(InputStream inputStream) {
-        try {
-          return (T) message.newBuilderForType().mergeFrom(decryptByteArray(inputStream.readAllBytes(), methodName)).build();
-        } catch (IOException e) {
-          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
-  }
   private final ServerCryptographicInterceptor crypto;
   private static final String CLIENT_CACHE_DIR = "resources/crypto/";
 

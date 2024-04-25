@@ -18,7 +18,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
 public abstract class AbstractAuthServerService {
-  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(
+  public final synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(
     String symmetricKeyPath, String IVPath, byte[] clientPubEnc
   ) throws Exception {
     KeyFactory serverKeyFac = KeyFactory.getInstance("DH");

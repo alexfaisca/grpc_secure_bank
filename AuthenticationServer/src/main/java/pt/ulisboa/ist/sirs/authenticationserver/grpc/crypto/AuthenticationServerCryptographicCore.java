@@ -5,7 +5,6 @@ import pt.ulisboa.ist.sirs.cryptology.Operations;
 
 
 public class AuthenticationServerCryptographicCore implements Base.CryptographicCore {
-
   public static byte[] decryptByteArray(
           byte[] message, String secretKeyPath, String ivPath
   ) throws Exception {

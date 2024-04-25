@@ -1,52 +1,15 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
-import com.google.protobuf.Message;
-import io.grpc.MethodDescriptor;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.utils.Utils;
-import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 public class NamingServerCryptographicManager extends NamingServerCryptographicCore {
-  public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForNamingServer(T message, String fullMethodName) {
-    return new MethodDescriptor.Marshaller<>() {
-      private final String methodName = fullMethodName;
-      @Override
-      public InputStream stream(T value) {
-        try {
-          return new ByteArrayInputStream(encryptByteArray(value.toByteArray(), methodName));
-        } catch (Exception e) {
-          throw new StatusRuntimeException(Status.INTERNAL.withDescription(Arrays.toString(e.getStackTrace())));
-        }
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public T parse(InputStream inputStream) {
-        try {
-          byte[] request = inputStream.readAllBytes();
-          if (checkByteArray(request, methodName))
-            throw new TamperedMessageException();
-          return (T) message.newBuilderForType().mergeFrom(decryptByteArray(request, methodName)).build();
-        } catch (IOException e) {
-          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
-  }
   private final ServerCryptographicInterceptor crypto;
   private final Map<String, Long> nonces = new HashMap<>();
   private static final String CLIENT_CACHE_DIR = "resources/crypto/server/";
@@ -55,6 +18,7 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
       this.crypto = crypto;
   }
 
+  @SuppressWarnings("all")
   public String getPublicKeyPath() {
       return Base.CryptographicCore.getPublicKeyPath();
   }
