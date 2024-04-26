@@ -97,7 +97,7 @@ public final class Operations {
   public static byte[] generateSessionKey() {
     try {
       KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-      keyGenerator.init(256);
+      keyGenerator.init(Base.SYMMETRIC_KEY_SIZE * 8); // Get number of bits in key (1 byte = 8 bits)
       SecretKey symmetricKey = keyGenerator.generateKey();
       return symmetricKey.getEncoded();
     } catch (Exception e) {
@@ -116,8 +116,8 @@ public final class Operations {
           MessageDigest.getInstance("SHA-256").digest(secret.getBytes()),
           Arrays.copyOf(
             MessageDigest.getInstance("SHA-256").digest(ByteBuffer.allocate(Integer.BYTES).putInt(id).array()),
-            16)),
-        16);
+            Base.IV_SIZE)),
+              Base.IV_SIZE);
     } catch (Exception e) {
       System.out.println(e.getMessage());
     }

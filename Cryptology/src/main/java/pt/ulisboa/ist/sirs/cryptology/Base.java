@@ -14,6 +14,12 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
 public final class Base {
+  public static final int SYMMETRIC_KEY_SIZE = 32; // bytes
+  public static final int IV_SIZE = SYMMETRIC_KEY_SIZE / 2; // bytes
+  public static final int ASYMMETRIC_KEY_SIZE = 4096; // in bits
+  public static final int SIGNATURE_SIZE = ASYMMETRIC_KEY_SIZE / 8; // asymmetric key size in bytes
+  public static final int HASH_SIZE = SYMMETRIC_KEY_SIZE; // bytes
+  public static final int STD_TICKET_PARAMS_SIZE = 18; // bytes
   public interface AuthClient {
     void initializeAuth(byte[] symmetricKey, byte[] iv);
   }
@@ -25,22 +31,29 @@ public final class Base {
   public interface KeyManager {
     static byte[] bundleTicket(String source, byte[] sessionKey, byte[] sessionIV) throws NoSuchAlgorithmException {
       byte[] result = new byte[80];
-      System.arraycopy(Operations.hash(source.getBytes(StandardCharsets.UTF_8)), 0, result, 0, 32);
-      System.arraycopy(sessionKey, 0, result, 32, 32);
-      System.arraycopy(sessionIV, 0, result, 64, 16);
+      System.arraycopy(Operations.hash(source.getBytes(StandardCharsets.UTF_8)), 0, result, 0, HASH_SIZE);
+      System.arraycopy(sessionKey, 0, result, HASH_SIZE, SYMMETRIC_KEY_SIZE);
+      System.arraycopy(sessionIV, 0, result, HASH_SIZE + SYMMETRIC_KEY_SIZE, IV_SIZE);
       return result;
     }
     static Ticket unbundleTicket(byte[] ticket) {
-      return new Ticket(Arrays.copyOfRange(ticket, 0, 32), Arrays.copyOfRange(ticket, 32, 64), Arrays.copyOfRange(ticket, 64, 80));
+      return new Ticket(
+        Arrays.copyOfRange(ticket, 0, HASH_SIZE),
+        Arrays.copyOfRange(ticket, HASH_SIZE, HASH_SIZE + SYMMETRIC_KEY_SIZE),
+        Arrays.copyOfRange(ticket, HASH_SIZE + SYMMETRIC_KEY_SIZE, HASH_SIZE + SYMMETRIC_KEY_SIZE + IV_SIZE)
+      );
     }
     static byte[] unbundleParams(byte[] params, byte[] publicKeySpecs) {
-      byte[] result = new byte[18 + publicKeySpecs.length];
-      System.arraycopy(params, 0, result, 0, 18);
-      System.arraycopy(publicKeySpecs, 0, result, 18, publicKeySpecs.length);
+      byte[] result = new byte[STD_TICKET_PARAMS_SIZE + publicKeySpecs.length];
+      System.arraycopy(params, 0, result, 0, STD_TICKET_PARAMS_SIZE);
+      System.arraycopy(publicKeySpecs, 0, result, STD_TICKET_PARAMS_SIZE, publicKeySpecs.length);
       return result;
     }
     static EKEParams unbundleParams(byte[] bundle) {
-      return new EKEParams(Arrays.copyOfRange(bundle, 0, 18), Arrays.copyOfRange(bundle, 18, bundle.length));
+      return new EKEParams(
+        Arrays.copyOfRange(bundle, 0, STD_TICKET_PARAMS_SIZE),
+        Arrays.copyOfRange(bundle, STD_TICKET_PARAMS_SIZE, bundle.length)
+      );
     }
   }
 

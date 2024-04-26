@@ -23,7 +23,7 @@ public final class EKEClient {
   public EKEParams encryptedKeyExchange() throws Exception {
 
     KeyPairGenerator clientKeypairGen = KeyPairGenerator.getInstance("DH");
-    clientKeypairGen.initialize(2048);
+    clientKeypairGen.initialize(Base.ASYMMETRIC_KEY_SIZE);
     KeyPair keyPair = clientKeypairGen.generateKeyPair();
 
     // Client creates and initializes her DH KeyAgreement object
@@ -60,14 +60,14 @@ public final class EKEClient {
     clientKeyAgree.doPhase(serverPubKey, true);
 
     byte[] sharedSecret = clientKeyAgree.generateSecret();
-    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, 32, "AES");
+    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, Base.SYMMETRIC_KEY_SIZE, "AES");
 
     // Instantiate AlgorithmParameters object from parameter encoding obtained from server
     AlgorithmParameters aesParams = AlgorithmParameters.getInstance("AES");
     aesParams.init(params.params());
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
     cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
-    byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 14);
+    byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 10 + Integer.BYTES);
     byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
 
     crypto.initializeSession(aesKey.getEncoded(), iv);

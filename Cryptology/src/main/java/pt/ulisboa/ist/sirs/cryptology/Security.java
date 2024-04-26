@@ -1,7 +1,5 @@
 package pt.ulisboa.ist.sirs.cryptology;
 
-import pt.ulisboa.ist.sirs.utils.Utils;
-
 import java.security.*;
 import java.util.Arrays;
 
@@ -17,9 +15,9 @@ public final class Security {
       InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
     byte[] signature = Operations.messageSignature(privateKey, message);
 
-    byte[] protectedDocument = new byte[signature.length + message.length];
-    System.arraycopy(signature, 0, protectedDocument, 0, signature.length);
-    System.arraycopy(message, 0, protectedDocument, signature.length, message.length);
+    byte[] protectedDocument = new byte[Base.SIGNATURE_SIZE + message.length];
+    System.arraycopy(signature, 0, protectedDocument, 0, Base.SIGNATURE_SIZE);
+    System.arraycopy(message, 0, protectedDocument, Base.SIGNATURE_SIZE, message.length);
 
     return Operations.encryptData(secretKey, protectedDocument, iv);
   }
@@ -28,8 +26,8 @@ public final class Security {
       throws NoSuchPaddingException, SignatureException, NoSuchAlgorithmException, InvalidKeyException,
       IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
     byte[] protectedDocument = Operations.decryptData(secretKey, cryptogram, iv);
-    byte[] signature = Arrays.copyOfRange(protectedDocument, 0, 512);
-    byte[] message = Arrays.copyOfRange(protectedDocument, 512, protectedDocument.length);
+    byte[] signature = Arrays.copyOfRange(protectedDocument, 0, Base.SIGNATURE_SIZE);
+    byte[] message = Arrays.copyOfRange(protectedDocument, Base.SIGNATURE_SIZE, protectedDocument.length);
 
     return Operations.messageValidation(publicKey, message, signature);
   }
@@ -38,7 +36,7 @@ public final class Security {
       throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException,
       InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
     byte[] protectedDocument = Operations.decryptData(secretKey, cryptogram, iv);
-    byte[] message = Arrays.copyOfRange(protectedDocument, 512, protectedDocument.length);
+    byte[] message = Arrays.copyOfRange(protectedDocument, Base.SIGNATURE_SIZE, protectedDocument.length);
     byte[] document = new byte[message.length];
     System.arraycopy(message, 0, document, 0, message.length);
     return document;

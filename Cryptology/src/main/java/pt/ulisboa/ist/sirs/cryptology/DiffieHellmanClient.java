@@ -22,7 +22,7 @@ public final class DiffieHellmanClient {
 
   public byte[] diffieHellmanInitialize() throws NoSuchAlgorithmException, InvalidKeyException {
     KeyPairGenerator clientKeypairGen = KeyPairGenerator.getInstance("DH");
-    clientKeypairGen.initialize(2048);
+    clientKeypairGen.initialize(Base.ASYMMETRIC_KEY_SIZE);
     KeyPair keyPair = clientKeypairGen.generateKeyPair();
 
     // Client creates and initializes his DH KeyAgreement object
@@ -45,7 +45,7 @@ public final class DiffieHellmanClient {
     clientKeyAgree.doPhase(serverPubKey, true);
 
     byte[] sharedSecret = clientKeyAgree.generateSecret();
-    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, 32, "AES");
+    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, Base.SYMMETRIC_KEY_SIZE, "AES");
 
     // Instantiate AlgorithmParameters object from parameter encoding
     // obtained from server
@@ -53,7 +53,7 @@ public final class DiffieHellmanClient {
     aesParams.init(serverParams);
     Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
     cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
-    byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 14);
+    byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 10 + Integer.BYTES);
     byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
 
     crypto.initializeAuth(aesKey.getEncoded(), iv);
