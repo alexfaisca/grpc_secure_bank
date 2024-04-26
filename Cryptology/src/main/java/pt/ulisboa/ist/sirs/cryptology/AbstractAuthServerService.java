@@ -19,7 +19,7 @@ public final class AbstractAuthServerService {
   public static synchronized DiffieHellmanParams diffieHellmanExchange(
     String symmetricKeyPath, String IVPath, byte[] clientPubEnc
   ) throws Exception {
-    KeyFactory serverKeyFac = KeyFactory.getInstance("DH");
+    KeyFactory serverKeyFac = KeyFactory.getInstance(Base.DH_ALG);
     X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(clientPubEnc);
     PublicKey clientPublic = serverKeyFac.generatePublic(x509KeySpec);
 
@@ -27,12 +27,12 @@ public final class AbstractAuthServerService {
     DHParameterSpec dhParamFromClientPubKey = ((DHPublicKey) clientPublic).getParams();
 
     // Server creates his own DH key pair
-    KeyPairGenerator serverKeypairGen = KeyPairGenerator.getInstance("DH");
+    KeyPairGenerator serverKeypairGen = KeyPairGenerator.getInstance(Base.DH_ALG);
     serverKeypairGen.initialize(dhParamFromClientPubKey);
     KeyPair serverKeypair = serverKeypairGen.generateKeyPair();
 
     // Server creates and initializes his DH KeyAgreement object
-    KeyAgreement serverKeyAgree = KeyAgreement.getInstance("DH");
+    KeyAgreement serverKeyAgree = KeyAgreement.getInstance(Base.DH_ALG);
     serverKeyAgree.init(serverKeypair.getPrivate());
 
     // Server encodes his public key, and sends it to client.
@@ -44,17 +44,17 @@ public final class AbstractAuthServerService {
      */
     serverKeyAgree.doPhase(clientPublic, true);
     byte[] sharedSecret = serverKeyAgree.generateSecret();
-    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, 32, "AES");
+    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, Base.SYMMETRIC_KEY_SIZE, Base.SYMMETRIC_ALG);
 
     // Server encrypts, using AES in CBC mode
-    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    Cipher cipher = Cipher.getInstance(Base.CIPHER_ALG);
     cipher.init(Cipher.ENCRYPT_MODE, aesKey);
     cipher.doFinal(Base.generateRandom(Long.MAX_VALUE).toString().getBytes());
 
     // Retrieve the parameter that was used, and transfer it to Alice in encoded
     // format
     byte[] encodedParams = cipher.getParameters().getEncoded();
-    byte[] temp = Arrays.copyOfRange(encodedParams, 10, 14);
+    byte[] temp = Arrays.copyOfRange(encodedParams, 10, 10 + Integer.BYTES);
     byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
 
     // Cache client crypto data

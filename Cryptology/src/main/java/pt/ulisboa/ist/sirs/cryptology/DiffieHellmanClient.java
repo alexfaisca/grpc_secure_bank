@@ -21,12 +21,12 @@ public final class DiffieHellmanClient {
   }
 
   public byte[] diffieHellmanInitialize() throws NoSuchAlgorithmException, InvalidKeyException {
-    KeyPairGenerator clientKeypairGen = KeyPairGenerator.getInstance("DH");
+    KeyPairGenerator clientKeypairGen = KeyPairGenerator.getInstance(Base.DH_ALG);
     clientKeypairGen.initialize(Base.ASYMMETRIC_KEY_SIZE);
     KeyPair keyPair = clientKeypairGen.generateKeyPair();
 
     // Client creates and initializes his DH KeyAgreement object
-    clientKeyAgree = KeyAgreement.getInstance("DH");
+    clientKeyAgree = KeyAgreement.getInstance(Base.DH_ALG);
     clientKeyAgree.init(keyPair.getPrivate());
 
     // Client encodes his public key, and sends it to server.
@@ -38,20 +38,20 @@ public final class DiffieHellmanClient {
      * Client uses server's public key for the first (and only) phase
      * of his part of the DH protocol.
      */
-    KeyFactory clientKeyFac = KeyFactory.getInstance("DH");
+    KeyFactory clientKeyFac = KeyFactory.getInstance(Base.DH_ALG);
     X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(serverPublic);
     PublicKey serverPubKey = clientKeyFac.generatePublic(x509KeySpec);
 
     clientKeyAgree.doPhase(serverPubKey, true);
 
     byte[] sharedSecret = clientKeyAgree.generateSecret();
-    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, Base.SYMMETRIC_KEY_SIZE, "AES");
+    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, Base.SYMMETRIC_KEY_SIZE, Base.SYMMETRIC_ALG);
 
     // Instantiate AlgorithmParameters object from parameter encoding
     // obtained from server
-    AlgorithmParameters aesParams = AlgorithmParameters.getInstance("AES");
+    AlgorithmParameters aesParams = AlgorithmParameters.getInstance(Base.SYMMETRIC_ALG);
     aesParams.init(serverParams);
-    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    Cipher cipher = Cipher.getInstance(Base.CIPHER_ALG);
     cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
     byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 10 + Integer.BYTES);
     byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));

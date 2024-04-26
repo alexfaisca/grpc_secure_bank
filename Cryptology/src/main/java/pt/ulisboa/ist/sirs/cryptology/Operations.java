@@ -27,7 +27,7 @@ public final class Operations {
   BadPaddingException, InvalidAlgorithmParameterException {
     IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
-    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    Cipher cipher = Cipher.getInstance(Base.CIPHER_ALG);
     cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
 
     return cipher.doFinal(message);
@@ -39,7 +39,7 @@ public final class Operations {
   BadPaddingException, InvalidAlgorithmParameterException {
     IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
-    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    Cipher cipher = Cipher.getInstance(Base.CIPHER_ALG);
     cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec);
 
     return cipher.doFinal(cipherText);
@@ -49,7 +49,7 @@ public final class Operations {
     PublicKey secretKey, byte[] message
   ) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
   BadPaddingException {
-    Cipher cipher = Cipher.getInstance("RSA");
+    Cipher cipher = Cipher.getInstance(Base.ASYMMETRIC_ALG);
     cipher.init(Cipher.ENCRYPT_MODE, secretKey);
     return cipher.doFinal(message);
   }
@@ -58,7 +58,7 @@ public final class Operations {
     PrivateKey secretKey, byte[] cipherText
   ) throws NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, IllegalBlockSizeException,
   BadPaddingException {
-    Cipher cipher = Cipher.getInstance("RSA");
+    Cipher cipher = Cipher.getInstance(Base.ASYMMETRIC_ALG);
     cipher.init(Cipher.DECRYPT_MODE, secretKey);
     return cipher.doFinal(cipherText);
   }
@@ -66,16 +66,16 @@ public final class Operations {
   public static byte[] hash(
     byte[] message
   ) throws NoSuchAlgorithmException {
-    final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+    final MessageDigest messageDigest = MessageDigest.getInstance(Base.HASH_ALG);
     return messageDigest.digest(message);
   }
 
   public static byte[] messageSignature(
     PrivateKey privateKey, byte[] message
   ) throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
-    byte[] digest = MessageDigest.getInstance("SHA-256").digest(message);
+    byte[] digest = MessageDigest.getInstance(Base.HASH_ALG).digest(message);
 
-    Signature signature = Signature.getInstance("SHA256withRSA");
+    Signature signature = Signature.getInstance(Base.SIGNATURE_ALG);
     signature.initSign(privateKey);
     signature.update(digest);
 
@@ -85,9 +85,9 @@ public final class Operations {
   public static boolean messageValidation(
     PublicKey publicKey, byte[] message, byte[] messageSignature
   ) throws SignatureException, InvalidKeyException, NoSuchAlgorithmException {
-    byte[] digest = MessageDigest.getInstance("SHA-256").digest(message);
+    byte[] digest = MessageDigest.getInstance(Base.HASH_ALG).digest(message);
 
-    Signature signature = Signature.getInstance("SHA256withRSA");
+    Signature signature = Signature.getInstance(Base.SIGNATURE_ALG);
     signature.initVerify(publicKey);
     signature.update(digest);
 
@@ -96,7 +96,7 @@ public final class Operations {
 
   public static byte[] generateSessionKey() {
     try {
-      KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+      KeyGenerator keyGenerator = KeyGenerator.getInstance(Base.SYMMETRIC_ALG);
       keyGenerator.init(Base.SYMMETRIC_KEY_SIZE * 8); // Get number of bits in key (1 byte = 8 bits)
       SecretKey symmetricKey = keyGenerator.generateKey();
       return symmetricKey.getEncoded();
@@ -112,10 +112,10 @@ public final class Operations {
     try {
       return Arrays.copyOf(
         encryptData(
-          new SecretKeySpec(secretKey, "AES"),
-          MessageDigest.getInstance("SHA-256").digest(secret.getBytes()),
+          new SecretKeySpec(secretKey, Base.SYMMETRIC_ALG),
+          MessageDigest.getInstance(Base.HASH_ALG).digest(secret.getBytes()),
           Arrays.copyOf(
-            MessageDigest.getInstance("SHA-256").digest(ByteBuffer.allocate(Integer.BYTES).putInt(id).array()),
+            MessageDigest.getInstance(Base.HASH_ALG).digest(ByteBuffer.allocate(Integer.BYTES).putInt(id).array()),
             Base.IV_SIZE)),
               Base.IV_SIZE);
     } catch (Exception e) {

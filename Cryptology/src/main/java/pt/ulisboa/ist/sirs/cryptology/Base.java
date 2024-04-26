@@ -20,6 +20,12 @@ public final class Base {
   public static final int SIGNATURE_SIZE = ASYMMETRIC_KEY_SIZE / 8; // asymmetric key size in bytes
   public static final int HASH_SIZE = SYMMETRIC_KEY_SIZE; // bytes
   public static final int STD_TICKET_PARAMS_SIZE = 18; // bytes
+  public static final String SYMMETRIC_ALG = "AES";
+  public static final String ASYMMETRIC_ALG = "RSA";
+  public static final String DH_ALG = "DH";
+  public static final String HASH_ALG = "SHA-256";
+  public static final String SIGNATURE_ALG = "SHA256withRSA";
+  public static final String CIPHER_ALG = "AES/CBC/PKCS5Padding";
   public interface AuthClient {
     void initializeAuth(byte[] symmetricKey, byte[] iv);
   }
@@ -98,17 +104,17 @@ public final class Base {
   }
 
   public static SecretKey readSecretKey(String secretKeyPath) throws Exception {
-    return new SecretKeySpec(Utils.readBytesFromFile(secretKeyPath), "AES");
+    return new SecretKeySpec(Utils.readBytesFromFile(secretKeyPath), SYMMETRIC_ALG);
   }
 
   public static PublicKey readPublicKey(String publicKeyPath) throws Exception {
     X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Utils.readBytesFromFile(publicKeyPath));
-    return KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
+    return KeyFactory.getInstance(ASYMMETRIC_ALG).generatePublic(publicKeySpec);
   }
 
   public static PrivateKey readPrivateKey(String privateKeyPath) throws Exception {
     PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(Utils.readBytesFromFile(privateKeyPath));
-    return KeyFactory.getInstance("RSA").generatePrivate(privateKeySpec);
+    return KeyFactory.getInstance(ASYMMETRIC_ALG).generatePrivate(privateKeySpec);
   }
 
   public static byte[] readIv(String ivPath) throws Exception {
