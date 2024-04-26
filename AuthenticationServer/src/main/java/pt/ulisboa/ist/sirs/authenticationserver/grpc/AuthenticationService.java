@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.*;
 
-public final class AuthenticationService extends AbstractAuthServerService {
+public final class AuthenticationService {
   public static class AuthenticationServerServiceBuilder {
 
     private final boolean debug;
@@ -97,12 +97,7 @@ public final class AuthenticationService extends AbstractAuthServerService {
   }
 
   public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {
-    crypto.initializeClientCache(client);
-    return super.diffieHellmanExchange(
-      crypto.buildSymmetricKeyPath(client),
-      crypto.buildIVPath(client),
-      clientPubEnc
-    );
+    return crypto.diffieHellmanExchange(clientPubEnc, client);
   }
 
   public synchronized AuthTicket authenticate(

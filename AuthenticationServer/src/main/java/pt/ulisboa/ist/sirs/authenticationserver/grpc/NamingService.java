@@ -4,11 +4,10 @@ import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParamet
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.NamingServerCryptographicManager;
 import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
 
-import java.io.File;
 import java.time.OffsetDateTime;
 import java.util.*;
 
-public final class NamingService extends AbstractAuthServerService {
+public final class NamingService {
   public static class NamingServerServiceBuilder {
     private final NamingServerCryptographicManager crypto;
     private final boolean debug;
@@ -93,15 +92,6 @@ public final class NamingService extends AbstractAuthServerService {
   }
 
   public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {
-    File clientDirectory = new File("resources/crypto/server/" + client + "/");
-    if (!clientDirectory.exists())
-      if (!clientDirectory.mkdirs())
-        throw new RuntimeException("Could not store client key");
-
-    return super.diffieHellmanExchange(
-      crypto.buildSymmetricKeyPath(client),
-      crypto.buildIVPath(client),
-      clientPubEnc
-    );
+    return crypto.diffieHellmanExchange(clientPubEnc, client);
   }
 }

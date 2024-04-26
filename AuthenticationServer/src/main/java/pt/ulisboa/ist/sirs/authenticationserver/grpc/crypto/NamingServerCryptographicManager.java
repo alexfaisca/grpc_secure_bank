@@ -1,9 +1,12 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
+import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.KeyBundle;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
+import pt.ulisboa.ist.sirs.cryptology.AbstractAuthServerService;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.dto.DiffieHellmanParams;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.BadPaddingException;
@@ -141,5 +144,22 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
 
   public byte[] bundleEKEParams(byte[] params, byte[] publicKeySpecs) {
     return Base.KeyManager.unbundleParams(params, publicKeySpecs);
+  }
+
+  private void initializeClientDir(String client) {
+    File clientDirectory = new File("resources/crypto/server/" + client + "/");
+    if (!clientDirectory.exists())
+      if (!clientDirectory.mkdirs())
+        throw new RuntimeException("Could not store client key");
+  }
+
+  public DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {
+    initializeClientDir(client);
+    DiffieHellmanParams params = AbstractAuthServerService.diffieHellmanExchange(
+      buildSymmetricKeyPath(client),
+      buildIVPath(client),
+      clientPubEnc
+    );
+    return new DiffieHellmanExchangeParameters(params.publicKey(), params.parameters());
   }
 }

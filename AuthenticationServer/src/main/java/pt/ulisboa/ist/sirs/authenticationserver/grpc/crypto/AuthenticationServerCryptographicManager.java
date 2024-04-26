@@ -1,7 +1,10 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
+import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.cryptology.AbstractAuthServerService;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.dto.DiffieHellmanParams;
 
 import java.io.File;
 
@@ -57,5 +60,15 @@ public class AuthenticationServerCryptographicManager extends AuthenticationServ
       Base.KeyManager.bundleTicket(source, sessionKey, sessionIV),
       Base.readIv(getTargetServerIVPath(target))
     );
+  }
+
+  public synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {
+    initializeClientCache(client);
+    DiffieHellmanParams params = AbstractAuthServerService.diffieHellmanExchange(
+      buildSymmetricKeyPath(client),
+      buildIVPath(client),
+      clientPubEnc
+    );
+    return new DiffieHellmanExchangeParameters(params.publicKey(), params.parameters());
   }
 }

@@ -1,8 +1,6 @@
-package pt.ulisboa.ist.sirs.authenticationserver.grpc;
+package pt.ulisboa.ist.sirs.cryptology;
 
-import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
-import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.dto.DiffieHellmanParams;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.Cipher;
@@ -17,8 +15,8 @@ import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
-public abstract class AbstractAuthServerService {
-  public final synchronized DiffieHellmanExchangeParameters diffieHellmanExchange(
+public final class AbstractAuthServerService {
+  public static synchronized DiffieHellmanParams diffieHellmanExchange(
     String symmetricKeyPath, String IVPath, byte[] clientPubEnc
   ) throws Exception {
     KeyFactory serverKeyFac = KeyFactory.getInstance("DH");
@@ -63,6 +61,6 @@ public abstract class AbstractAuthServerService {
     Utils.writeBytesToFile(aesKey.getEncoded(), symmetricKeyPath);
     Utils.writeBytesToFile(iv, IVPath);
 
-    return new DiffieHellmanExchangeParameters(serverPubKeyEnc, encodedParams);
+    return new DiffieHellmanParams(serverPubKeyEnc, encodedParams);
   }
 }
