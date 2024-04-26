@@ -14,6 +14,13 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
 public final class Base {
+  public interface AuthClient {
+    void initializeAuth(byte[] symmetricKey, byte[] iv);
+  }
+  public interface EKEClientManager {
+    String buildPublicKeyPath();
+    void initializeSession(byte[] symmetricKey, byte[] iv);
+  }
 
   public interface KeyManager {
     static byte[] bundleTicket(String source, byte[] sessionKey, byte[] sessionIV) throws NoSuchAlgorithmException {

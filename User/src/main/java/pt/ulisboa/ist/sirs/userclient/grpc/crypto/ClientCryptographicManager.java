@@ -11,7 +11,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-public class ClientCryptographicManager extends ClientCryptographicCore implements Base.KeyManager {
+public class ClientCryptographicManager extends ClientCryptographicCore implements Base.KeyManager, Base.AuthClient {
   private static final String publicKeyPath = "resources/crypto/client/publicKey";
   private static final String privateKeyPath = "resources/crypto/client/privateKey";
 

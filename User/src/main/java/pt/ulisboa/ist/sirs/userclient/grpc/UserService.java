@@ -7,7 +7,7 @@ import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.AuthenticationServerCryptographicStub;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.ClientCryptographicManager;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.DatabaseServerCryptographicStub;
-import pt.ulisboa.ist.sirs.userclient.grpc.crypto.DiffieHellmanClient;
+import pt.ulisboa.ist.sirs.cryptology.DiffieHellmanClient;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import com.google.protobuf.ByteString;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
@@ -76,14 +76,14 @@ public class UserService {
 
   public void diffieHellman() {
     try {
-      DiffieHellmanClient dhClient = new DiffieHellmanClient();
+      DiffieHellmanClient dhClient = new DiffieHellmanClient(crypto);
       // Client encodes his public key, and sends it to server.
       AuthenticationServer.DiffieHellmanExchangeResponse serverResponse = authenticationServerServiceStub.diffieHellmanExchange(
         AuthenticationServer.DiffieHellmanExchangeRequest.newBuilder().setClientPublic(ByteString.copyFrom(
           dhClient.diffieHellmanInitialize()
       )).build());
       dhClient.diffieHellmanFinish(
-        serverResponse.getServerPublic().toByteArray(), serverResponse.getParameters().toByteArray(), crypto
+        serverResponse.getServerPublic().toByteArray(), serverResponse.getParameters().toByteArray()
       );
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());

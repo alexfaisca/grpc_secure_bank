@@ -1,6 +1,6 @@
-package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
+package pt.ulisboa.ist.sirs.cryptology;
 
-import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.cryptology.Base.AuthClient;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.Cipher;
@@ -14,7 +14,11 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
 public final class DiffieHellmanClient {
-  public KeyAgreement clientKeyAgree;
+  private KeyAgreement clientKeyAgree;
+  private final AuthClient crypto;
+  public DiffieHellmanClient(AuthClient crypto) {
+    this.crypto = crypto;
+  }
 
   public byte[] diffieHellmanInitialize() throws NoSuchAlgorithmException, InvalidKeyException {
     KeyPairGenerator clientKeypairGen = KeyPairGenerator.getInstance("DH");
@@ -29,7 +33,7 @@ public final class DiffieHellmanClient {
     return keyPair.getPublic().getEncoded();
   }
 
-  public void diffieHellmanFinish(byte[] serverPublic, byte[] serverParams, ClientCryptographicManager crypto) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IOException, NoSuchPaddingException, InvalidAlgorithmParameterException {
+  public void diffieHellmanFinish(byte[] serverPublic, byte[] serverParams) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IOException, NoSuchPaddingException, InvalidAlgorithmParameterException {
     /*
      * Client uses server's public key for the first (and only) phase
      * of his part of the DH protocol.

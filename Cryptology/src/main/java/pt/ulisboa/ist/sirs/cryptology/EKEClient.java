@@ -1,9 +1,7 @@
-package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
+package pt.ulisboa.ist.sirs.cryptology;
 
-import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
-import pt.ulisboa.ist.sirs.databaseserver.dto.EKEExchangeParamsDto;
-import pt.ulisboa.ist.sirs.databaseserver.dto.KeyParamsDto;
+import pt.ulisboa.ist.sirs.cryptology.Base.EKEClientManager;
+import pt.ulisboa.ist.sirs.dto.EKEParams;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.*;
@@ -18,11 +16,11 @@ public final class EKEClient {
   private KeyAgreement clientKeyAgree;
   private SecretKey ephemeralKey;
   private byte[] ephemeralIV;
-  private final AuthenticationClientCryptographicManager crypto;
-  public EKEClient(AuthenticationClientCryptographicManager crypto) {
+  private final EKEClientManager crypto;
+  public EKEClient(EKEClientManager crypto) {
     this.crypto = crypto;
   }
-  public EKEExchangeParamsDto encryptedKeyExchange() throws Exception {
+  public EKEParams encryptedKeyExchange() throws Exception {
 
     KeyPairGenerator clientKeypairGen = KeyPairGenerator.getInstance("DH");
     clientKeypairGen.initialize(2048);
@@ -41,7 +39,7 @@ public final class EKEClient {
     System.arraycopy(ephemeralKeyEnc, 0, keyIVConcat, 0, ephemeralKeyEnc.length);
     System.arraycopy(ephemeralIV, 0, keyIVConcat, ephemeralKeyEnc.length, ephemeralIV.length);
     ephemeralKey = new SecretKeySpec(ephemeralKeyEnc, "AES");
-    return new EKEExchangeParamsDto(
+    return new EKEParams(
       Operations.encryptData(ephemeralKey, keyPair.getPublic().getEncoded(), ephemeralIV),
       Operations.encryptDataAsymmetric(Base.readPublicKey(crypto.buildPublicKeyPath()), keyIVConcat)
     );
@@ -50,9 +48,13 @@ public final class EKEClient {
   public long finalize(
     byte[] serverParams, byte[] encryptedChallenge
   ) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IOException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
-    KeyParamsDto params = crypto.unbundleKeyParams(ephemeralKey, serverParams, ephemeralIV);
+    EKEParams params = Base.KeyManager.unbundleParams(Operations.decryptData(
+            ephemeralKey,
+            serverParams,
+            ephemeralIV
+    ));
     KeyFactory clientKeyFac = KeyFactory.getInstance("DH");
-    X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(params.keySpecs());
+    X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(params.publicKeySpecs());
     PublicKey serverPubKey = clientKeyFac.generatePublic(x509KeySpec);
 
     clientKeyAgree.doPhase(serverPubKey, true);

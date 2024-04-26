@@ -4,10 +4,10 @@ import com.google.protobuf.ByteString;
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer;
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.databaseserver.dto.EKEExchangeParamsDto;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AuthenticationClientCryptographicManager;
-import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.EKEClient;
+import pt.ulisboa.ist.sirs.cryptology.EKEClient;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.NamingServerCryptographicStub;
+import pt.ulisboa.ist.sirs.dto.EKEParams;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
@@ -108,13 +108,13 @@ public class DatabaseService {
       crypto.validateServer(initiateResponse.getServerCert().toByteArray());
 
       EKEClient ekeClient = new EKEClient(crypto);
-      EKEExchangeParamsDto exchangeParams = ekeClient.encryptedKeyExchange();
+      EKEParams exchangeParams = ekeClient.encryptedKeyExchange();
 
       NamingServer.EncryptedKeyExchangeResponse serverResponse = stub.encryptedKeyExchange(
         NamingServer.EncryptedKeyExchangeRequest.newBuilder()
-          .setClientParams(ByteString.copyFrom(exchangeParams.clientPublic()))
+          .setClientParams(ByteString.copyFrom(exchangeParams.params()))
           .setClientCert(ByteString.copyFrom(Utils.readBytesFromFile(Base.CryptographicCore.getCertPath())))
-          .setClientOps(ByteString.copyFrom(exchangeParams.clientEphemeral()))
+          .setClientOps(ByteString.copyFrom(exchangeParams.publicKeySpecs()))
       .build());
 
       long serverChallenge = ekeClient.finalize(
