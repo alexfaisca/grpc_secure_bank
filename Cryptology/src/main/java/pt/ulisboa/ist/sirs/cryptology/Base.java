@@ -52,7 +52,7 @@ public final class Base {
         Arrays.copyOfRange(ticket, HASH_SIZE + SYMMETRIC_KEY_SIZE, HASH_SIZE + SYMMETRIC_KEY_SIZE + IV_SIZE)
       );
     }
-    static byte[] unbundleParams(byte[] params, byte[] publicKeySpecs) {
+    static byte[] bundleParams(byte[] params, byte[] publicKeySpecs) {
       byte[] result = new byte[STD_TICKET_PARAMS_SIZE + publicKeySpecs.length];
       System.arraycopy(params, 0, result, 0, STD_TICKET_PARAMS_SIZE);
       System.arraycopy(publicKeySpecs, 0, result, STD_TICKET_PARAMS_SIZE, publicKeySpecs.length);
@@ -86,21 +86,25 @@ public final class Base {
     }
 
     final class Decrypter {
-      public static boolean check(byte[] input, SecretKey secretKey, PublicKey publicKey, byte[] iv)
-          throws Exception {
+      public static boolean check(byte[] input, SecretKey secretKey, PublicKey publicKey, byte[] iv) throws Exception {
         return Security.check(input, secretKey, publicKey, iv);
       }
-      public static byte[] decryptByteArray(byte[] input, SecretKey secretKey, byte[] iv)
-              throws Exception {
+      public static byte[] decryptByteArray(byte[] input, SecretKey secretKey, byte[] iv) throws Exception {
         return Security.unprotect(input, secretKey, iv);
       }
       public static byte[] decryptWithEphemeral(
-              byte[] ephemeralKey, byte[] cipher, byte[] ephemeralIV
+        byte[] ephemeralKey, byte[] cipher, byte[] ephemeralIV
       ) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException,
               NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
         return Operations.decryptData(
           new SecretKeySpec(ephemeralKey, Base.SYMMETRIC_ALG), cipher, ephemeralIV
         );
+      }
+      public static byte[] decryptDataAsymmetric(
+        PrivateKey privateKey, byte[] cipher
+      ) throws NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException,
+              InvalidKeyException {
+        return Operations.decryptDataAsymmetric(privateKey, cipher);
       }
     }
 

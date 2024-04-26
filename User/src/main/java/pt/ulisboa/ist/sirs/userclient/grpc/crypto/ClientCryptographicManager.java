@@ -1,27 +1,22 @@
 package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
 public class ClientCryptographicManager extends ClientCryptographicCore implements Base.KeyManager, Base.AuthClient {
-  private static final String publicKeyPath = "resources/crypto/client/publicKey";
-  private static final String privateKeyPath = "resources/crypto/client/privateKey";
-
   public ClientCryptographicManager() {
     super();
   }
 
   public static void initializeCryptoCache() {
-    File clientDirectory = new File("resources/crypto/client/");
-    File sessionDirectory = new File("resources/crypto/session/");
+    File clientDirectory = new File(CLIENT_DIR);
+    File sessionDirectory = new File(SESSION_DIR);
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
         throw new RuntimeException("Could not initialize client dir");
@@ -31,31 +26,31 @@ public class ClientCryptographicManager extends ClientCryptographicCore implemen
   }
 
   public static String buildSessionKeyPath() {
-    return "resources/crypto/session/sessionKey";
+    return SESSION_DIR + "sessionKey";
   }
 
   public static String buildSessionIVPath() {
-    return "resources/crypto/session/iv";
+    return SESSION_DIR + "iv";
   }
 
   public static String buildAuthKeyPath() {
-    return "resources/crypto/client/symmetricKey";
+    return AUTH_DIR + "symmetricKey";
   }
 
   public static String buildAuthIVPath() {
-    return "resources/crypto/client/iv";
+    return AUTH_DIR + "iv";
   }
 
   public static String buildSessionPublicKeyPath() {
-    return "resources/crypto/session/publicKey";
+    return SESSION_DIR + "publicKey";
   }
 
   public static  String buildSelfPublicKeyPath() {
-    return publicKeyPath;
+    return CLIENT_DIR + "publicKey";
   }
 
   public static String buildSelfPrivateKeyPath() {
-    return privateKeyPath;
+    return CLIENT_DIR + "privateKey";
   }
 
   public void validateSession(byte[] clientCert) throws CertificateException {
@@ -77,8 +72,8 @@ public class ClientCryptographicManager extends ClientCryptographicCore implemen
     Utils.writeBytesToFile(iv, ClientCryptographicManager.buildAuthIVPath());
   }
 
-  public byte[] encryptPassword(String password) throws NoSuchAlgorithmException {
-    return Operations.hash(password.getBytes());
+  public byte[] encryptPassword(String password) {
+    return hash(password.getBytes());
   }
 
   public byte[] encrypt(byte[] object) throws Exception {

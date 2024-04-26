@@ -3,8 +3,13 @@ package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 
+import java.security.NoSuchAlgorithmException;
+
 public abstract class ClientCryptographicCore implements Base.CryptographicCore {
-  protected boolean checkByteArray(
+  protected static final String CLIENT_DIR = "resources/crypto/client/";
+  protected static final String AUTH_DIR = "resources/crypto/client/";
+  protected static final String SESSION_DIR = "resources/crypto/session/";
+  protected static boolean checkByteArray(
     byte[] message, String secretKeyPath, String publicKeyPath, String ivPath
   ) throws Exception {
     return Decrypter.check(
@@ -38,5 +43,13 @@ public abstract class ClientCryptographicCore implements Base.CryptographicCore 
     return Operations.encryptData(
       Base.readSecretKey(secretKeyPath), message, Base.readIv(ivPath)
     );
+  }
+
+  protected static byte[] hash(byte[] message) {
+    try {
+      return Operations.hash(message);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e.getMessage());
+    }
   }
 }

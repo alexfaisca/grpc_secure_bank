@@ -4,10 +4,6 @@ import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParamet
 import pt.ulisboa.ist.sirs.authenticationserver.dto.KeyBundle;
 import pt.ulisboa.ist.sirs.authenticationserver.exceptions.CannotInitializeClientCache;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.ist.sirs.cryptology.AbstractAuthServerService;
-import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
-import pt.ulisboa.ist.sirs.dto.DiffieHellmanParams;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import javax.crypto.BadPaddingException;
@@ -21,7 +17,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -36,11 +31,11 @@ public class NamingServerCryptographicManager extends CryptographicCore {
 
   @SuppressWarnings("all")
   public String getPublicKeyPath() {
-      return Base.CryptographicCore.getPublicKeyPath();
+      return super.getPublicKeyPath();
   }
 
   public String getPrivateKeyPath() {
-      return Base.CryptographicCore.getPrivateKeyPath();
+      return super.getPrivateKeyPath();
   }
 
   public String buildSymmetricKeyPath(String client) {
@@ -115,22 +110,11 @@ public class NamingServerCryptographicManager extends CryptographicCore {
   }
 
   public KeyBundle getEphemeralBundle(byte[] bundle) throws Exception {
-    byte[] decryptedBundle = Operations.decryptDataAsymmetric(
-      Base.readPrivateKey(getPrivateKeyPath()),
-      bundle
-    );
-    return new KeyBundle(
-      Arrays.copyOfRange(decryptedBundle, 0, Base.SYMMETRIC_KEY_SIZE),
-      Arrays.copyOfRange(decryptedBundle, Base.SYMMETRIC_KEY_SIZE, Base.SYMMETRIC_KEY_SIZE + Base.IV_SIZE)
-    );
+    return getKeyBundle(bundle, getPrivateKeyPath());
   }
 
   public byte[] encryptWithSession(byte[] message, String client) throws Exception {
-    return Operations.encryptData(
-      Base.readSecretKey(buildSymmetricKeyPath(client)),
-      message,
-      Base.readIv(buildIVPath(client))
-    );
+    return encryptUnsignedByteArray(message, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 
   public byte[] encryptWithEphemeral(
@@ -148,16 +132,11 @@ public class NamingServerCryptographicManager extends CryptographicCore {
   }
 
   public byte[] bundleEKEParams(byte[] params, byte[] publicKeySpecs) {
-    return Base.KeyManager.unbundleParams(params, publicKeySpecs);
+    return super.bundleEKEParams(params, publicKeySpecs);
   }
 
   public DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {
     initializeClientDir(client);
-    DiffieHellmanParams params = AbstractAuthServerService.diffieHellmanExchange(
-      buildSymmetricKeyPath(client),
-      buildIVPath(client),
-      clientPubEnc
-    );
-    return new DiffieHellmanExchangeParameters(params.publicKey(), params.parameters());
+    return super.diffieHellmanExchange(clientPubEnc, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 }

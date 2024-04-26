@@ -3,7 +3,6 @@ package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 
 public class DatabaseServerCryptographicCore implements Base.CryptographicCore {
-
   public boolean checkByteArray(
     byte[] message, String secretKeyPath, String publicKeyPath, String ivPath
   ) throws Exception {

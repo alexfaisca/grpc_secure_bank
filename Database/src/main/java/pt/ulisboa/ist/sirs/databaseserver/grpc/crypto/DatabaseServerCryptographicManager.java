@@ -1,81 +1,18 @@
 package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 
-import io.grpc.*;
-import io.grpc.MethodDescriptor.Marshaller;
-import com.google.protobuf.Message;
-
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.databaseserver.dto.TicketDto;
 import pt.ulisboa.ist.sirs.dto.Ticket;
 import pt.ulisboa.ist.sirs.utils.Utils;
-import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 public class DatabaseServerCryptographicManager extends DatabaseServerCryptographicCore implements Base.KeyManager {
-  public <T extends Message> Marshaller<T> marshallerForDatabase(T message, String fullMethodName) {
-    return new Marshaller<>() {
-      private final String methodName = fullMethodName;
-
-      @Override
-      public InputStream stream(T value) {
-        try {
-          return new ByteArrayInputStream(encryptByteArray(value.toByteArray(), methodName));
-        } catch (Exception e) {
-          throw new StatusRuntimeException(Status.INTERNAL.withDescription(Arrays.toString(e.getStackTrace())));
-        }
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public T parse(InputStream inputStream) {
-        try {
-          byte[] request = inputStream.readAllBytes();
-          if (checkByteArray(request, methodName))
-            throw new TamperedMessageException();
-          return (T) message.newBuilderForType().mergeFrom(decryptByteArray(request, methodName)).build();
-        } catch (IOException e) {
-          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
-  }
-  public <T extends Message> Marshaller<T> marshallerForDatabaseAuth(T message, String fullMethodName) {
-    return new Marshaller<>() {
-      private final String methodName = fullMethodName;
-      @Override
-      public InputStream stream(T value) {
-        try {
-          return new ByteArrayInputStream(encryptByteArray(value.toByteArray(), methodName));
-        } catch (Exception e) {
-          throw new StatusRuntimeException(Status.INTERNAL.withDescription(Arrays.toString(e.getStackTrace())));
-        }
-      }
-
-      @Override
-      @SuppressWarnings("unchecked")
-      public T parse(InputStream inputStream) {
-        try {
-          return (T) message.newBuilderForType().mergeFrom(decryptByteArray(inputStream.readAllBytes(), methodName)).build();
-        } catch (IOException e) {
-          throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
-  }
   private final String publicKeyPath;
   private final String privateKeyPath;
   private final DatabaseServerCryptographicInterceptor crypto;
