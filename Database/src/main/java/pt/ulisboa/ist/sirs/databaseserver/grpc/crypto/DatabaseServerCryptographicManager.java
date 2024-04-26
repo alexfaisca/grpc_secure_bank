@@ -1,10 +1,7 @@
 package pt.ulisboa.ist.sirs.databaseserver.grpc.crypto;
 
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServiceGrpc;
-import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.databaseserver.dto.TicketDto;
-import pt.ulisboa.ist.sirs.dto.Ticket;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
 import java.io.File;
@@ -12,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class DatabaseServerCryptographicManager extends DatabaseServerCryptographicCore implements Base.KeyManager {
+public class DatabaseServerCryptographicManager extends CryptographicCore {
   private final String publicKeyPath;
   private final String privateKeyPath;
   private final DatabaseServerCryptographicInterceptor crypto;
@@ -32,6 +29,7 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
     return crypto.getClientHash(methodName);
   }
 
+  @SuppressWarnings("all")
   public String getPublicKeyPath() {
     return this.publicKeyPath;
   }
@@ -41,28 +39,28 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
   }
 
   public String buildAuthKeyPath() {
-    return "resources/crypto/auth/symmetricKey";
+    return AUTH_DIR + "symmetricKey";
   }
 
   public String buildAuthIVPath() {
-    return "resources/crypto/auth/iv";
+    return AUTH_DIR + "iv";
   }
 
   private String buildSessionKeyPath(String client) {
-    return "resources/crypto/session/" + client + "/sessionKey";
+    return SESSION_DIR + client + "/sessionKey";
   }
 
   private String buildSessionIVPath(String client) {
-    return "resources/crypto/session/" + client + "/iv";
+    return SESSION_DIR + client + "/iv";
   }
 
   private String buildSessionPublicKeyPath(String client) {
-    return "resources/crypto/session/" + client + "/publicKey";
+    return SESSION_DIR + client + "/publicKey";
   }
 
   public void createSession(byte[] sessionKey, byte[] iv) {
     String client = crypto.getFromQueue(DatabaseServiceGrpc.getAuthenticateMethod().getFullMethodName());
-    File clientDirectory = new File("resources/crypto/session/" + client + "/");
+    File clientDirectory = new File(SESSION_DIR + client + "/");
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
         throw new RuntimeException("Could not store client key");
@@ -106,9 +104,6 @@ public class DatabaseServerCryptographicManager extends DatabaseServerCryptograp
   }
 
   public TicketDto unbundleTicket(byte[] ticket) throws Exception {
-    Ticket unbundled = Base.KeyManager.unbundleTicket(Operations.decryptData(
-      Base.readSecretKey(buildAuthKeyPath()), ticket, Base.readIv(buildAuthIVPath())
-    ));
-    return new TicketDto(unbundled.sourceHash(), unbundled.sessionKey(), unbundled.sessionIV());
+    return unbundleTicket(ticket, buildAuthKeyPath(), buildAuthIVPath());
   }
 }

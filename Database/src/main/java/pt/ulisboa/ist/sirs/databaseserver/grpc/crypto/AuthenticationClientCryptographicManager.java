@@ -9,17 +9,13 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-public class AuthenticationClientCryptographicManager extends AuthenticationClientCryptographicCore implements Base.EKEClientManager {
+public class AuthenticationClientCryptographicManager extends CryptographicCore implements Base.EKEClientManager {
   public AuthenticationClientCryptographicManager() {
     super();
   }
 
-  public String getAuthCacheDir() {
-    return "resources/crypto/auth";
-  }
-
   public void initializeAuthCache() {
-    File clientDirectory = new File(this.getAuthCacheDir());
+    File clientDirectory = new File(AUTH_DIR);
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
         throw new RuntimeException("Could not store client key");
@@ -38,19 +34,19 @@ public class AuthenticationClientCryptographicManager extends AuthenticationClie
   }
 
   public String getPrivateKeyPath() {
-    return "resources/crypto/self/privateKey";
+    return SELF_DIR + "privateKey";
   }
 
   public String buildPublicKeyPath() {
-    return "resources/crypto/auth/publicKey";
+    return AUTH_DIR + "publicKey";
   }
 
   public String buildSessionKeyPath() {
-    return "resources/crypto/auth/symmetricKey";
+    return AUTH_DIR + "symmetricKey";
   }
 
   public String buildSessionIVPath() {
-    return "resources/crypto/auth/iv";
+    return AUTH_DIR + "iv";
   }
 
   public void validateServer(byte[] clientCert) throws CertificateException {
