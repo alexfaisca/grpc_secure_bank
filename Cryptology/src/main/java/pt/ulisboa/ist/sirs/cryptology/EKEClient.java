@@ -2,7 +2,9 @@ package pt.ulisboa.ist.sirs.cryptology;
 
 import pt.ulisboa.ist.sirs.cryptology.Base.EKEClientManager;
 import pt.ulisboa.ist.sirs.dto.EKEParams;
+import pt.ulisboa.ist.sirs.dto.KeyIVPair;
 import pt.ulisboa.ist.sirs.utils.Utils;
+import pt.ulisboa.ist.sirs.utils.exceptions.KeyGenerationException;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
@@ -10,7 +12,6 @@ import java.io.IOException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 
 public final class EKEClient {
   private KeyAgreement clientKeyAgree;
@@ -33,7 +34,7 @@ public final class EKEClient {
     byte[] ephemeralKeyEnc = Operations.generateSessionKey();
     ephemeralIV = Operations.generateIV(new SecureRandom().nextInt(), ephemeralKeyEnc, String.valueOf(new SecureRandom().nextDouble()));
     if (ephemeralKeyEnc == null || ephemeralIV == null)
-      throw new RuntimeException("Ephemeral key generation went wrong.");
+      throw new KeyGenerationException();
     // Merge ephemeral symmetric key and iv to encrypt using server public key
     byte[] keyIVConcat = new byte[ephemeralKeyEnc.length + ephemeralIV.length];
     System.arraycopy(ephemeralKeyEnc, 0, keyIVConcat, 0, ephemeralKeyEnc.length);
@@ -47,7 +48,8 @@ public final class EKEClient {
 
   public long finalize(
     byte[] serverParams, byte[] encryptedChallenge
-  ) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IOException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+  ) throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IOException, NoSuchPaddingException,
+          InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
     EKEParams params = Base.KeyManager.unbundleParams(Operations.decryptData(
       ephemeralKey,
       serverParams,
@@ -58,19 +60,10 @@ public final class EKEClient {
     PublicKey serverPubKey = clientKeyFac.generatePublic(x509KeySpec);
 
     clientKeyAgree.doPhase(serverPubKey, true);
-
-    byte[] sharedSecret = clientKeyAgree.generateSecret();
-    SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, Base.SYMMETRIC_KEY_SIZE, Base.SYMMETRIC_ALG);
-
     // Instantiate AlgorithmParameters object from parameter encoding obtained from server
-    AlgorithmParameters aesParams = AlgorithmParameters.getInstance(Base.SYMMETRIC_ALG);
-    aesParams.init(params.params());
-    Cipher cipher = Cipher.getInstance(Base.CIPHER_ALG);
-    cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
-    byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 10 + Integer.BYTES);
-    byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
+    KeyIVPair pair = Operations.generateKeyIVFromSecretAndParams(clientKeyAgree.generateSecret(), params.params());
 
-    crypto.initializeSession(aesKey.getEncoded(), iv);
-    return Utils.byteArrayToLong(Operations.decryptData(aesKey, encryptedChallenge, iv));
+    crypto.initializeSession(pair.key().getEncoded(), pair.iv());
+    return Utils.byteArrayToLong(Operations.decryptData(pair.key(), encryptedChallenge, pair.iv()));
   }
 }

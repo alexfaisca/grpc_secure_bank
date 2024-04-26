@@ -64,20 +64,22 @@ public final class Base {
   }
 
   public interface CryptographicCore {
+    String SELF_DIRECTORY = "resources/crypto/self/";
+    String CERT_DIRECTORY = "resources/certificates/";
     static void initializeSelfDirectory() {
-      File clientDirectory = new File("resources/crypto/self/");
+      File clientDirectory = new File(SELF_DIRECTORY);
       if (!clientDirectory.exists())
         if (!clientDirectory.mkdirs())
           throw new RuntimeException("Could not store client key");
     }
     static String getCertPath() {
-      return "resources/certificates/cert.pem";
+      return CERT_DIRECTORY + "cert.pem";
     }
     static String getPublicKeyPath() {
-      return "resources/crypto/self/publicKey";
+      return SELF_DIRECTORY + "publicKey";
     }
     static String getPrivateKeyPath() {
-      return "resources/crypto/self/privateKey";
+      return SELF_DIRECTORY + "privateKey";
     }
 
     final class Decrypter {

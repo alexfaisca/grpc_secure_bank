@@ -1,14 +1,11 @@
 package pt.ulisboa.ist.sirs.cryptology;
 
+import pt.ulisboa.ist.sirs.dto.KeyIVPair;
+import pt.ulisboa.ist.sirs.utils.Utils;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
 import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
@@ -122,5 +119,21 @@ public final class Operations {
       System.out.println(e.getMessage());
     }
     return null;
+  }
+
+  public static KeyIVPair generateKeyIVFromSecretAndParams(
+    byte[] secret, byte[] params
+  ) throws NoSuchAlgorithmException, IOException, NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
+    SecretKeySpec aesKey = new SecretKeySpec(secret, 0, Base.SYMMETRIC_KEY_SIZE, Base.SYMMETRIC_ALG);
+    AlgorithmParameters aesParams = AlgorithmParameters.getInstance(Base.SYMMETRIC_ALG);
+    aesParams.init(params);
+
+    Cipher cipher = Cipher.getInstance(Base.CIPHER_ALG);
+    cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
+    byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 10 + Integer.BYTES);
+
+    return new KeyIVPair(
+      aesKey, Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(secret))
+    );
   }
 }
