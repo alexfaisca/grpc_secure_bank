@@ -62,7 +62,7 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
       responseObserver.onNext(DiffieHellmanExchangeResponse.newBuilder()
         .setServerPublic(ByteString.copyFrom(params.publicKey()))
         .setParameters(ByteString.copyFrom(params.parameters()))
-        .build());
+      .build());
       responseObserver.onCompleted();
     } catch (Exception e) {
       responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());

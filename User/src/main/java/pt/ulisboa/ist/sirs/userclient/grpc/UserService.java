@@ -4,27 +4,19 @@ import io.grpc.*;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.AuthenticationServerCryptographicStub;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.ClientCryptographicManager;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.DatabaseServerCryptographicStub;
+import pt.ulisboa.ist.sirs.userclient.grpc.crypto.DiffieHellmanClient;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import com.google.protobuf.ByteString;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
 import java.io.*;
-import java.security.*;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.crypto.Cipher;
-import javax.crypto.KeyAgreement;
-import javax.crypto.spec.SecretKeySpec;
 
 public class UserService {
 
@@ -52,7 +44,7 @@ public class UserService {
 
     public UserService build() {
       this.authenticationServerChannel = Grpc.newChannelBuilderForAddress(
-          this.authenticationServerAddress, this.authenticationServerPort, this.credentials
+        this.authenticationServerAddress, this.authenticationServerPort, this.credentials
       ).build();
       return new UserService(this);
     }
@@ -84,44 +76,15 @@ public class UserService {
 
   public void diffieHellman() {
     try {
-      KeyPairGenerator clientKeypairGen = KeyPairGenerator.getInstance("DH");
-      clientKeypairGen.initialize(2048);
-      KeyPair keyPair = clientKeypairGen.generateKeyPair();
-
-      // Client creates and initializes her DH KeyAgreement object
-      KeyAgreement clientKeyAgree = KeyAgreement.getInstance("DH");
-      clientKeyAgree.init(keyPair.getPrivate());
-
+      DiffieHellmanClient dhClient = new DiffieHellmanClient();
       // Client encodes his public key, and sends it to server.
       AuthenticationServer.DiffieHellmanExchangeResponse serverResponse = authenticationServerServiceStub.diffieHellmanExchange(
         AuthenticationServer.DiffieHellmanExchangeRequest.newBuilder().setClientPublic(ByteString.copyFrom(
-          keyPair.getPublic().getEncoded()
+          dhClient.diffieHellmanInitialize()
       )).build());
-
-      /*
-       * Client uses server's public key for the first (and only) phase
-       * of his part of the DH protocol.
-       */
-      KeyFactory clientKeyFac = KeyFactory.getInstance("DH");
-      X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(serverResponse.getServerPublic().toByteArray());
-      PublicKey serverPubKey = clientKeyFac.generatePublic(x509KeySpec);
-
-      clientKeyAgree.doPhase(serverPubKey, true);
-
-      byte[] sharedSecret = clientKeyAgree.generateSecret();
-      SecretKeySpec aesKey = new SecretKeySpec(sharedSecret, 0, 32, "AES");
-
-      // Instantiate AlgorithmParameters object from parameter encoding
-      // obtained from server
-      AlgorithmParameters aesParams = AlgorithmParameters.getInstance("AES");
-      aesParams.init(serverResponse.getParameters().toByteArray());
-      Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-      cipher.init(Cipher.DECRYPT_MODE, aesKey, aesParams);
-      byte[] temp = Arrays.copyOfRange(aesParams.getEncoded(), 10, 14);
-      byte[] iv = Operations.generateIV(Utils.byteArrayToInt(temp), aesKey.getEncoded(), Utils.byteToHex(sharedSecret));
-
-      Utils.writeBytesToFile(aesKey.getEncoded(), ClientCryptographicManager.buildAuthKeyPath());
-      Utils.writeBytesToFile(iv, ClientCryptographicManager.buildAuthIVPath());
+      dhClient.diffieHellmanFinish(
+        serverResponse.getServerPublic().toByteArray(), serverResponse.getParameters().toByteArray(), crypto
+      );
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
     } catch (Exception e) {
@@ -142,18 +105,11 @@ public class UserService {
       // Needham-Schroeder step 2
       if (!authTicket.getTimeStamp().equals(timestampString))
         throw new TamperedMessageException();
-      String address = authTicket.getAddress();
-      Integer port = authTicket.getPort();
 
-      initializeStub(address, port, credentials);
+      initializeStub(authTicket.getAddress(), authTicket.getPort(), credentials);
 
       // Save session key and session iv
-      Utils.writeBytesToFile(
-        authTicket.getSessionKey().toByteArray(), ClientCryptographicManager.buildSessionKeyPath()
-      );
-      Utils.writeBytesToFile(
-        authTicket.getSessionIV().toByteArray(), ClientCryptographicManager.buildSessionIVPath()
-      );
+      crypto.initializeSession(authTicket.getSessionKey().toByteArray(), authTicket.getSessionIV().toByteArray());
 
       // Needham-Schroeder step 3
       AuthenticateResponse authenticateDatabaseResponse = databaseServiceStub.authenticate(
@@ -164,14 +120,7 @@ public class UserService {
 
       // Needham-Schroeder steps 4 and 5 (altered to receive server cert)
       int challenge = Base.generateRandom(Integer.MAX_VALUE).intValue();
-      CertificateFactory certGen = CertificateFactory.getInstance("X.509");
-      X509Certificate cert = (X509Certificate) certGen.generateCertificate(
-        new ByteArrayInputStream(authenticateDatabaseResponse.getServerCert().toByteArray())
-      );
-      cert.checkValidity();
-      Utils.writeBytesToFile(
-          cert.getPublicKey().getEncoded(), ClientCryptographicManager.buildSessionPublicKeyPath()
-      );
+      crypto.validateSession(authenticateDatabaseResponse.getServerCert().toByteArray());
 
       StillAliveResponse stillAliveResponse = databaseServiceStub.stillAlive(
         StillAliveRequest.newBuilder()

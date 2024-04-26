@@ -7,6 +7,7 @@ import io.grpc.stub.StreamObserver;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.NamingServerState;
 import pt.ulisboa.ist.sirs.authenticationserver.domain.utils.ServiceTypesConverter;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.dto.KeyBundle;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.TargetServer;
 import pt.ulisboa.ist.sirs.authenticationserver.exceptions.ServiceHasNoRegisteredServersException;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AbstractCryptographicNamingServiceImpl;
@@ -15,16 +16,9 @@ import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer.*;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc.NamingServerServiceImplBase;
 import pt.ulisboa.ist.sirs.cryptology.Base;
-import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
 import pt.ulisboa.ist.sirs.utils.exceptions.TamperedMessageException;
 
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayInputStream;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.List;
 
 public final class NamingServerImpl extends NamingServerServiceImplBase {
@@ -76,32 +70,20 @@ public final class NamingServerImpl extends NamingServerServiceImplBase {
   ) {
     try {
       String client = crypto.getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeMethod().getFullMethodName());
-      CertificateFactory certGen = CertificateFactory.getInstance("X.509");
-      X509Certificate cert = (X509Certificate) certGen.generateCertificate(
-        new ByteArrayInputStream(request.getClientCert().toByteArray())
-      );
-      cert.checkValidity();
-      crypto.validateSession(cert.getPublicKey().getEncoded());
-      byte[] keyIVConcat = Operations.decryptDataAsymmetric(
-        Base.readPrivateKey(Base.CryptographicCore.getPrivateKeyPath()),
-        request.getClientOps().toByteArray()
-      );
-      byte[] ephemeralKey = Arrays.copyOfRange(keyIVConcat, 0, 32);
-      byte[] ephemeralIV = Arrays.copyOfRange(keyIVConcat, 32, 48);
-      SecretKey secretKey = new SecretKeySpec(ephemeralKey, "AES");
+
+      crypto.validateSession(request.getClientCert().toByteArray());
+      KeyBundle keyBundle = crypto.getEphemeralBundle(request.getClientOps().toByteArray());
+
       DiffieHellmanExchangeParameters parameters = state.diffieHellmanExchange(
-        Operations.decryptData(secretKey, request.getClientParams().toByteArray(), ephemeralIV), client
+        crypto.decryptWithEphemeral(keyBundle, request.getClientParams().toByteArray()), client
       );
 
       responseObserver.onNext(EncryptedKeyExchangeResponse.newBuilder().setServerParams(
-        ByteString.copyFrom(Operations.encryptData(
-          secretKey, crypto.bundleEKEParams(parameters.parameters(), parameters.publicKey()), ephemeralIV
-      ))).setServerChallenge(
-        ByteString.copyFrom(Operations.encryptData(
-          Base.readSecretKey(crypto.buildSymmetricKeyPath(client)),
-          Utils.longToByteArray(crypto.initializeNonce()),
-          Base.readIv(crypto.buildIVPath(client))
-      ))).build());
+        ByteString.copyFrom((crypto.encryptWithEphemeral(
+          keyBundle, crypto.bundleEKEParams(parameters.parameters(), parameters.publicKey())
+      )))).setServerChallenge(
+        ByteString.copyFrom(crypto.encryptWithSession(Utils.longToByteArray(crypto.initializeNonce()), client))
+      ).build());
       responseObserver.onCompleted();
     } catch (Exception e) {
       if (debug) System.out.println(e.getMessage());

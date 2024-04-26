@@ -1,10 +1,24 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
+import pt.ulisboa.ist.sirs.authenticationserver.dto.KeyBundle;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -65,13 +79,18 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
     return result;
   }
 
-  public void validateSession(byte[] clientPublicKey) {
+  public void validateSession(byte[] clientCert) throws CertificateException {
     String client = getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeMethod().getFullMethodName());
+    CertificateFactory certGen = CertificateFactory.getInstance("X.509");
+    X509Certificate cert = (X509Certificate) certGen.generateCertificate(
+            new ByteArrayInputStream(clientCert)
+    );
+    cert.checkValidity();
     File clientDirectory = new File("resources/crypto/server/" + client + "/");
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
         throw new RuntimeException("Could not store client key");
-    Utils.writeBytesToFile(clientPublicKey, buildPublicKeyPath(client));
+    Utils.writeBytesToFile(cert.getPublicKey().getEncoded(), buildPublicKeyPath(client));
   }
 
   public byte[] encryptByteArray(byte[] object, String methodName) throws Exception {
@@ -87,6 +106,37 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
   public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
     String client = getClientHash(methodName);
     return decryptByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
+  }
+
+  public KeyBundle getEphemeralBundle(byte[] bundle) throws Exception {
+    byte[] decryptedBundle = Operations.decryptDataAsymmetric(
+      Base.readPrivateKey(getPrivateKeyPath()),
+      bundle
+    );
+    return new KeyBundle(
+      new SecretKeySpec(Arrays.copyOfRange(decryptedBundle, 0, 32), "AES").getEncoded(),
+      Arrays.copyOfRange(decryptedBundle, 32, 48)
+    );
+  }
+
+  public byte[] encryptWithSession(byte[] message, String client) throws Exception {
+    return Operations.encryptData(
+      Base.readSecretKey(buildSymmetricKeyPath(client)),
+      message,
+      Base.readIv(buildIVPath(client))
+    );
+  }
+
+  public byte[] encryptWithEphemeral(KeyBundle bundle, byte[] message) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    return Operations.encryptData(
+      new SecretKeySpec(bundle.ephemeralKey(), "AES"), message, bundle.ephemeralIV()
+    );
+  }
+
+  public byte[] decryptWithEphemeral(KeyBundle bundle, byte[] cipher) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    return Operations.decryptData(
+      new SecretKeySpec(bundle.ephemeralKey(), "AES"), cipher, bundle.ephemeralIV()
+    );
   }
 
   public byte[] bundleEKEParams(byte[] params, byte[] publicKeySpecs) {

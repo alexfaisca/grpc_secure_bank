@@ -6,7 +6,7 @@ import pt.ulisboa.ist.sirs.cryptology.Operations;
 
 public class AuthenticationServerCryptographicCore implements Base.CryptographicCore {
   public static byte[] decryptByteArray(
-          byte[] message, String secretKeyPath, String ivPath
+    byte[] message, String secretKeyPath, String ivPath
   ) throws Exception {
     return Operations.decryptData(
       Base.readSecretKey(secretKeyPath),
@@ -16,7 +16,7 @@ public class AuthenticationServerCryptographicCore implements Base.Cryptographic
   }
 
   protected static byte[] encryptByteArray(
-          byte[] message, String secretKeyPath, String ivPath
+    byte[] message, String secretKeyPath, String ivPath
   ) throws Exception {
     return Operations.encryptData(
       Base.readSecretKey(secretKeyPath),

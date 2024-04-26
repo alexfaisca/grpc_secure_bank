@@ -17,7 +17,7 @@ import java.util.Arrays;
 import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 
 public abstract class AbstractCryptographicAuthenticationServiceImpl {
-  public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForNamingServer(
+  public <T extends Message> MethodDescriptor.Marshaller<T> marshallerForAuthServer(
     T message, String fullMethodName, AuthenticationServerCryptographicManager crypto
   ) {
     return new MethodDescriptor.Marshaller<>() {
@@ -34,6 +34,7 @@ public abstract class AbstractCryptographicAuthenticationServiceImpl {
       @SuppressWarnings("unchecked")
       public T parse(InputStream inputStream) {
         try {
+          System.out.println(methodName);
           return (T) message.newBuilderForType().mergeFrom(crypto.decryptByteArray(inputStream.readAllBytes(), methodName)).build();
         } catch (IOException e) {
           throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
@@ -51,8 +52,8 @@ public abstract class AbstractCryptographicAuthenticationServiceImpl {
     ).build();
     final MethodDescriptor<AuthenticateRequest, AuthenticateResponse> METHOD_AUTHENTICATE =
       AuthenticationServerServiceGrpc.getAuthenticateMethod().toBuilder(
-        marshallerForNamingServer(AuthenticateRequest.getDefaultInstance(), AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(), crypto),
-        marshallerForNamingServer(AuthenticateResponse.getDefaultInstance(), AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(), crypto)
+        marshallerForAuthServer(AuthenticateRequest.getDefaultInstance(), AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(), crypto),
+        marshallerForAuthServer(AuthenticateResponse.getDefaultInstance(), AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(), crypto)
     ).build();
     ServerServiceDefinition orig = serverImpl.bindService();
     return ServerServiceDefinition.builder(orig.getServiceDescriptor().getName())

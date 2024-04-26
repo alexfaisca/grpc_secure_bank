@@ -2,9 +2,14 @@ package pt.ulisboa.ist.sirs.userclient.grpc.crypto;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
+import pt.ulisboa.ist.sirs.utils.Utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 public class ClientCryptographicManager extends ClientCryptographicCore implements Base.KeyManager {
   private static final String publicKeyPath = "resources/crypto/client/publicKey";
@@ -51,6 +56,25 @@ public class ClientCryptographicManager extends ClientCryptographicCore implemen
 
   public static String buildSelfPrivateKeyPath() {
     return privateKeyPath;
+  }
+
+  public void validateSession(byte[] clientCert) throws CertificateException {
+    CertificateFactory certGen = CertificateFactory.getInstance("X.509");
+    X509Certificate cert = (X509Certificate) certGen.generateCertificate(
+            new ByteArrayInputStream(clientCert)
+    );
+    cert.checkValidity();
+    Utils.writeBytesToFile(cert.getPublicKey().getEncoded(), buildSessionPublicKeyPath());
+  }
+
+  public void initializeSession(byte[] sessionKey, byte[] sessionIV) {
+    Utils.writeBytesToFile(sessionKey, ClientCryptographicManager.buildSessionKeyPath());
+    Utils.writeBytesToFile(sessionIV, ClientCryptographicManager.buildSessionIVPath());
+  }
+
+  public void initializeAuth(byte[] secretKey, byte[] iv) {
+    Utils.writeBytesToFile(secretKey, ClientCryptographicManager.buildAuthKeyPath());
+    Utils.writeBytesToFile(iv, ClientCryptographicManager.buildAuthIVPath());
   }
 
   public byte[] encryptPassword(String password) throws NoSuchAlgorithmException {

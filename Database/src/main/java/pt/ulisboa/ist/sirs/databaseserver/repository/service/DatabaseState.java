@@ -7,17 +7,12 @@ import pt.ulisboa.ist.sirs.databaseserver.dto.PaymentDto;
 import pt.ulisboa.ist.sirs.databaseserver.repository.DatabaseOperations;
 import pt.ulisboa.ist.sirs.databaseserver.repository.service.engine.*;
 import pt.ulisboa.ist.sirs.databaseserver.repository.service.engine.impl.*;
-import pt.ulisboa.ist.sirs.databaseserver.repository.service.engine.*;
-import pt.ulisboa.ist.sirs.databaseserver.repository.service.engine.impl.*;
 import pt.ulisboa.ist.sirs.utils.exceptions.ReplayAttackException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
-
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
 
 public class DatabaseState implements DatabaseOperations {
   public static final class DatabaseManagerBuilder {
