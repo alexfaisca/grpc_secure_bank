@@ -1,6 +1,7 @@
 package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.exceptions.CannotInitializeClientCache;
 import pt.ulisboa.ist.sirs.cryptology.AbstractAuthServerService;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.cryptology.Operations;
@@ -8,9 +9,8 @@ import pt.ulisboa.ist.sirs.dto.DiffieHellmanParams;
 
 import java.io.File;
 
-public class AuthenticationServerCryptographicManager extends AuthenticationServerCryptographicCore implements Base.KeyManager {
+public class AuthenticationServerCryptographicManager extends CryptographicCore implements Base.KeyManager {
   private final ServerCryptographicInterceptor crypto;
-  private static final String CLIENT_CACHE_DIR = "resources/crypto/";
 
   public AuthenticationServerCryptographicManager(ServerCryptographicInterceptor crypto) {
       this.crypto = crypto;
@@ -18,40 +18,40 @@ public class AuthenticationServerCryptographicManager extends AuthenticationServ
 
   // For now database symmetricKey and iv are distributed prior to application initialization, hence are static files
   public String getTargetServerSymmetricKeyPath(String server) {
-      return "resources/crypto/server/" + server + "/symmetricKey";
+      return SERVER_CACHE_DIR + server + "/symmetricKey";
   }
 
   public String getTargetServerIVPath(String server) {
-      return "resources/crypto/server/" + server + "/iv";
+      return SERVER_CACHE_DIR + server + "/iv";
+  }
+
+  public String buildSymmetricKeyPath(String client) {
+    return CLIENT_CACHE_DIR + client + "/symmetricKey";
+  }
+
+  public String buildIVPath(String client) {
+    return CLIENT_CACHE_DIR + client + "/iv";
+  }
+
+  public String getClientHash(String methodName) {
+    return crypto.getClientHash(methodName);
   }
 
   public void initializeClientCache(String client) {
     File clientDirectory = new File(CLIENT_CACHE_DIR + client + "/");
     if (!clientDirectory.exists())
       if (!clientDirectory.mkdirs())
-        throw new RuntimeException("Could not store client key");
-  }
-
-  public String buildSymmetricKeyPath(String client) {
-      return CLIENT_CACHE_DIR + client + "/symmetricKey";
-  }
-
-  public String buildIVPath(String client) {
-      return CLIENT_CACHE_DIR + client + "/iv";
-  }
-
-  public String getClientHash(String methodName) {
-      return crypto.getClientHash(methodName);
+        throw new CannotInitializeClientCache(client);
   }
 
   public byte[] encryptByteArray(byte[] object, String methodName) throws Exception {
     String client = getClientHash(methodName);
-    return encryptByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
+    return encryptUnsignedByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 
   public byte[] decryptByteArray(byte[] object, String methodName) throws Exception {
     String client = getClientHash(methodName);
-    return decryptByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
+    return decryptUnsignedByteArray(object, buildSymmetricKeyPath(client), buildIVPath(client));
   }
 
   public byte[] bundleTicket(String source, byte[] sessionKey, byte[] sessionIV, String target) throws Exception {

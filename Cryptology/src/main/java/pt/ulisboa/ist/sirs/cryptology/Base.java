@@ -4,6 +4,9 @@ import pt.ulisboa.ist.sirs.dto.EKEParams;
 import pt.ulisboa.ist.sirs.dto.Ticket;
 import pt.ulisboa.ist.sirs.utils.Utils;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
@@ -91,12 +94,29 @@ public final class Base {
               throws Exception {
         return Security.unprotect(input, secretKey, iv);
       }
+      public static byte[] decryptWithEphemeral(
+              byte[] ephemeralKey, byte[] cipher, byte[] ephemeralIV
+      ) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException,
+              NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+        return Operations.decryptData(
+          new SecretKeySpec(ephemeralKey, Base.SYMMETRIC_ALG), cipher, ephemeralIV
+        );
+      }
     }
 
     final class Encrypter {
       public static byte[] encryptByteArray(byte[] input, SecretKey secretKey, PrivateKey privateKey, byte[] iv)
           throws Exception {
         return Security.protect(input, secretKey, privateKey, iv);
+      }
+
+      public static byte[] encryptWithEphemeral(
+        byte[] ephemeralKey, byte[] message, byte[] ephemeralIV
+      ) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException,
+              NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+        return Operations.encryptData(
+          new SecretKeySpec(ephemeralKey, Base.SYMMETRIC_ALG), message, ephemeralIV
+        );
       }
     }
   }

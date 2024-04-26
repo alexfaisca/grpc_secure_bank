@@ -35,7 +35,9 @@ public abstract class AbstractCryptographicAuthenticationServiceImpl {
       public T parse(InputStream inputStream) {
         try {
           System.out.println(methodName);
-          return (T) message.newBuilderForType().mergeFrom(crypto.decryptByteArray(inputStream.readAllBytes(), methodName)).build();
+          return (T) message.newBuilderForType().mergeFrom(
+            crypto.decryptByteArray(inputStream.readAllBytes(), methodName)
+          ).build();
         } catch (IOException e) {
           throw Status.INTERNAL.withDescription("Invalid protobuf byte sequence").withCause(e).asRuntimeException();
         } catch (Exception e) {
@@ -44,7 +46,9 @@ public abstract class AbstractCryptographicAuthenticationServiceImpl {
       }
     };
   }
-  public final ServerServiceDefinition bindService(AuthenticationServerCryptographicManager crypto, AuthenticationServerImpl serverImpl) {
+  public final ServerServiceDefinition bindService(
+    AuthenticationServerCryptographicManager crypto, AuthenticationServerImpl serverImpl
+  ) {
     final MethodDescriptor<DiffieHellmanExchangeRequest, DiffieHellmanExchangeResponse> METHOD_DIFFIE_HELLMAN =
       AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().toBuilder(
         AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getRequestMarshaller(),
@@ -52,8 +56,16 @@ public abstract class AbstractCryptographicAuthenticationServiceImpl {
     ).build();
     final MethodDescriptor<AuthenticateRequest, AuthenticateResponse> METHOD_AUTHENTICATE =
       AuthenticationServerServiceGrpc.getAuthenticateMethod().toBuilder(
-        marshallerForAuthServer(AuthenticateRequest.getDefaultInstance(), AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(), crypto),
-        marshallerForAuthServer(AuthenticateResponse.getDefaultInstance(), AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(), crypto)
+        marshallerForAuthServer(
+          AuthenticateRequest.getDefaultInstance(),
+          AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(),
+          crypto
+        ),
+        marshallerForAuthServer(
+          AuthenticateResponse.getDefaultInstance(),
+          AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName(),
+          crypto
+        )
     ).build();
     ServerServiceDefinition orig = serverImpl.bindService();
     return ServerServiceDefinition.builder(orig.getServiceDescriptor().getName())

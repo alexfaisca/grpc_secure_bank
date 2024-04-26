@@ -2,6 +2,7 @@ package pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.KeyBundle;
+import pt.ulisboa.ist.sirs.authenticationserver.exceptions.CannotInitializeClientCache;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServerServiceGrpc;
 import pt.ulisboa.ist.sirs.cryptology.AbstractAuthServerService;
 import pt.ulisboa.ist.sirs.cryptology.Base;
@@ -12,7 +13,6 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.security.InvalidAlgorithmParameterException;
@@ -26,10 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class NamingServerCryptographicManager extends NamingServerCryptographicCore {
+public class NamingServerCryptographicManager extends CryptographicCore {
   private final ServerCryptographicInterceptor crypto;
   private final Map<String, Long> nonces = new HashMap<>();
-  private static final String CLIENT_CACHE_DIR = "resources/crypto/server/";
 
   public NamingServerCryptographicManager(ServerCryptographicInterceptor crypto) {
       this.crypto = crypto;
@@ -44,25 +43,25 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
       return Base.CryptographicCore.getPrivateKeyPath();
   }
 
-  public boolean checkServerCache(String client) {
-    File clientDirectory = new File(CLIENT_CACHE_DIR + client + "/");
-    return !clientDirectory.exists();
-  }
-
   public String buildSymmetricKeyPath(String client) {
-      return CLIENT_CACHE_DIR + client + "/symmetricKey";
+      return SERVER_CACHE_DIR + client + "/symmetricKey";
   }
 
   public String buildIVPath(String client) {
-      return CLIENT_CACHE_DIR + client + "/iv";
+      return SERVER_CACHE_DIR + client + "/iv";
   }
 
   public String buildPublicKeyPath(String client) {
-      return CLIENT_CACHE_DIR + client + "/publicKey";
+      return SERVER_CACHE_DIR + client + "/publicKey";
   }
 
   public String getClientHash(String methodName) {
     return crypto.getClientHash(methodName);
+  }
+
+  public boolean checkServerCache(String client) {
+    File clientDirectory = new File(SERVER_CACHE_DIR + client + "/");
+    return !clientDirectory.exists();
   }
 
   public long initializeNonce() {
@@ -82,6 +81,13 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
     return result;
   }
 
+  private void initializeClientDir(String client) {
+    File clientDirectory = new File(SERVER_CACHE_DIR + client + "/");
+    if (!clientDirectory.exists())
+      if (!clientDirectory.mkdirs())
+        throw new CannotInitializeClientCache(client);
+  }
+
   public void validateSession(byte[] clientCert) throws CertificateException {
     String client = getClientHash(NamingServerServiceGrpc.getEncryptedKeyExchangeMethod().getFullMethodName());
     CertificateFactory certGen = CertificateFactory.getInstance("X.509");
@@ -89,10 +95,7 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
             new ByteArrayInputStream(clientCert)
     );
     cert.checkValidity();
-    File clientDirectory = new File("resources/crypto/server/" + client + "/");
-    if (!clientDirectory.exists())
-      if (!clientDirectory.mkdirs())
-        throw new RuntimeException("Could not store client key");
+    initializeClientDir(client);
     Utils.writeBytesToFile(cert.getPublicKey().getEncoded(), buildPublicKeyPath(client));
   }
 
@@ -117,8 +120,8 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
       bundle
     );
     return new KeyBundle(
-      new SecretKeySpec(Arrays.copyOfRange(decryptedBundle, 0, 32), "AES").getEncoded(),
-      Arrays.copyOfRange(decryptedBundle, 32, 48)
+      Arrays.copyOfRange(decryptedBundle, 0, Base.SYMMETRIC_KEY_SIZE),
+      Arrays.copyOfRange(decryptedBundle, Base.SYMMETRIC_KEY_SIZE, Base.SYMMETRIC_KEY_SIZE + Base.IV_SIZE)
     );
   }
 
@@ -130,27 +133,22 @@ public class NamingServerCryptographicManager extends NamingServerCryptographicC
     );
   }
 
-  public byte[] encryptWithEphemeral(KeyBundle bundle, byte[] message) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
-    return Operations.encryptData(
-      new SecretKeySpec(bundle.ephemeralKey(), "AES"), message, bundle.ephemeralIV()
-    );
+  public byte[] encryptWithEphemeral(
+    KeyBundle bundle, byte[] message
+  ) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException,
+          NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    return super.encryptWithEphemeral(bundle.ephemeralKey(), message, bundle.ephemeralIV());
   }
 
-  public byte[] decryptWithEphemeral(KeyBundle bundle, byte[] cipher) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
-    return Operations.decryptData(
-      new SecretKeySpec(bundle.ephemeralKey(), "AES"), cipher, bundle.ephemeralIV()
-    );
+  public byte[] decryptWithEphemeral(
+    KeyBundle bundle, byte[] cipher
+  ) throws InvalidAlgorithmParameterException, NoSuchPaddingException, IllegalBlockSizeException,
+          NoSuchAlgorithmException, BadPaddingException, InvalidKeyException {
+    return super.decryptWithEphemeral(bundle.ephemeralKey(), cipher, bundle.ephemeralIV());
   }
 
   public byte[] bundleEKEParams(byte[] params, byte[] publicKeySpecs) {
     return Base.KeyManager.unbundleParams(params, publicKeySpecs);
-  }
-
-  private void initializeClientDir(String client) {
-    File clientDirectory = new File("resources/crypto/server/" + client + "/");
-    if (!clientDirectory.exists())
-      if (!clientDirectory.mkdirs())
-        throw new RuntimeException("Could not store client key");
   }
 
   public DiffieHellmanExchangeParameters diffieHellmanExchange(byte[] clientPubEnc, String client) throws Exception {

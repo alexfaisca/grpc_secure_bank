@@ -6,12 +6,12 @@ import pt.ulisboa.ist.sirs.utils.Utils;
 import java.util.*;
 
 public class ServerCryptographicInterceptor implements ServerInterceptor {
-  Map<String, List<String>> queueS = new HashMap<>();
+  Map<String, List<String>> queue = new HashMap<>();
   public boolean isNotQueued(String methodName) {
-    return queueS.get(methodName).isEmpty();
+    return queue.get(methodName).isEmpty();
   }
   public String getFromQueue(String methodName) {
-    return queueS.get(methodName).get(0);
+    return queue.get(methodName).get(0);
   }
 
   public String getClientHash(String methodName) {
@@ -52,15 +52,15 @@ public class ServerCryptographicInterceptor implements ServerInterceptor {
             call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)).toString().getBytes()
     );
     String fullMethodName = call.getMethodDescriptor().getFullMethodName();
-    if (queueS.get(fullMethodName) == null) {
+    if (queue.get(fullMethodName) == null) {
       ArrayList<String> list = new ArrayList<>();
       list.add(addressHash);
-      queueS.put(fullMethodName, list);
-    } else queueS.get(fullMethodName).add(addressHash);
+      queue.put(fullMethodName, list);
+    } else queue.get(fullMethodName).add(addressHash);
     return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(listener) {
       private boolean cached = false;
       private void clearClientCache() {
-        if (cached) queueS.get(fullMethodName).remove(0);
+        if (cached) queue.get(fullMethodName).remove(0);
         cached = false;
       }
       @Override

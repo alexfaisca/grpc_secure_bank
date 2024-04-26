@@ -52,26 +52,58 @@ public abstract class AbstractCryptographicNamingServiceImpl {
     final MethodDescriptor<EncryptedKeyExchangeChallengeRequest, EncryptedKeyExchangeChallengeResponse> METHOD_EKE_CHALLENGE =
       NamingServerServiceGrpc.getEncryptedKeyExchangeChallengeMethod()
       .toBuilder(
-        marshallerForNamingServer(EncryptedKeyExchangeChallengeRequest.getDefaultInstance(), NamingServerServiceGrpc.getEncryptedKeyExchangeChallengeMethod().getFullMethodName(), crypto),
-        marshallerForNamingServer(EncryptedKeyExchangeChallengeResponse.getDefaultInstance(), NamingServerServiceGrpc.getEncryptedKeyExchangeChallengeMethod().getFullMethodName(), crypto)
+        marshallerForNamingServer(
+          EncryptedKeyExchangeChallengeRequest.getDefaultInstance(),
+          NamingServerServiceGrpc.getEncryptedKeyExchangeChallengeMethod().getFullMethodName(),
+          crypto
+        ),
+        marshallerForNamingServer(
+          EncryptedKeyExchangeChallengeResponse.getDefaultInstance(),
+          NamingServerServiceGrpc.getEncryptedKeyExchangeChallengeMethod().getFullMethodName(),
+          crypto
+        )
     ).build();
     final MethodDescriptor<RegisterRequest, Ack> METHOD_REGISTER_SERVER =
       NamingServerServiceGrpc.getRegisterMethod()
         .toBuilder(
-          marshallerForNamingServer(RegisterRequest.getDefaultInstance(), NamingServerServiceGrpc.getRegisterMethod().getFullMethodName(), crypto),
-          marshallerForNamingServer(Ack.getDefaultInstance(), NamingServerServiceGrpc.getRegisterMethod().getFullMethodName(), crypto)
+          marshallerForNamingServer(
+            RegisterRequest.getDefaultInstance(),
+            NamingServerServiceGrpc.getRegisterMethod().getFullMethodName(),
+            crypto
+          ),
+          marshallerForNamingServer(
+            Ack.getDefaultInstance(),
+            NamingServerServiceGrpc.getRegisterMethod().getFullMethodName(),
+            crypto
+          )
     ).build();
     final MethodDescriptor<LookupRequest, LookupResponse> METHOD_LOOKUP_SERVER =
       NamingServerServiceGrpc.getLookupMethod()
         .toBuilder(
-          marshallerForNamingServer(LookupRequest.getDefaultInstance(), NamingServerServiceGrpc.getLookupMethod().getFullMethodName(), crypto),
-          marshallerForNamingServer(LookupResponse.getDefaultInstance(), NamingServerServiceGrpc.getLookupMethod().getFullMethodName(), crypto)
+          marshallerForNamingServer(
+            LookupRequest.getDefaultInstance(),
+            NamingServerServiceGrpc.getLookupMethod().getFullMethodName(),
+            crypto
+          ),
+          marshallerForNamingServer(
+            LookupResponse.getDefaultInstance(),
+            NamingServerServiceGrpc.getLookupMethod().getFullMethodName(),
+            crypto
+          )
     ).build();
     final MethodDescriptor<DeleteRequest, Ack> METHOD_DELETE_SERVER =
       NamingServerServiceGrpc.getDeleteMethod()
         .toBuilder(
-          marshallerForNamingServer(DeleteRequest.getDefaultInstance(), NamingServerServiceGrpc.getDeleteMethod().getFullMethodName(), crypto),
-          marshallerForNamingServer(Ack.getDefaultInstance(), NamingServerServiceGrpc.getDeleteMethod().getFullMethodName(), crypto)
+          marshallerForNamingServer(
+            DeleteRequest.getDefaultInstance(),
+            NamingServerServiceGrpc.getDeleteMethod().getFullMethodName(),
+            crypto
+          ),
+          marshallerForNamingServer(
+            Ack.getDefaultInstance(),
+            NamingServerServiceGrpc.getDeleteMethod().getFullMethodName(),
+            crypto
+          )
     ).build();
     ServerServiceDefinition orig = serverImpl.bindService();
     return ServerServiceDefinition.builder(orig.getServiceDescriptor().getName())
