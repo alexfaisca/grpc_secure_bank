@@ -1,6 +1,6 @@
 # SecureBank Project Read Me
 
-A distributed bank application that supports user authentication through the Needham-Schroeder protocol, using Diffie-Hellman key distribution between the user and authentication server, and communication in HTTP/2 through gRPC with multiple client concurrent support and key management, sporting a custom database managemer system built with hibernate.
+A distributed bank application that supports user authentication through the Needham-Schroeder protocol, using Diffie-Hellman key distribution between the user and database server and the authentication server. Communication in HTTP/2 through gRPC with multiple client concurrent support and key management, sporting a custom database managemer system built with hibernate and custom gRPC marshallers and interceptors used for automatic message encryption and decryption.
 
 Checkout the demo video to see it all coming together!
 
