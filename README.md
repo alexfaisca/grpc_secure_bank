@@ -78,10 +78,6 @@ Available commands:
 ```
 
 ```sh
-> addExpense <username> <password> <amount> <description>
-```
-
-```sh
 > orderPayment <username> <password> <amount> <recipient> <description>
 ```
 
