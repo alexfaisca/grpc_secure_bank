@@ -247,9 +247,9 @@ public class UserService {
           .setName(username)
           .setPassword(ByteString.copyFrom(crypto.encryptPassword(password)))
           .setDate(date)
-          .setDate(amount)
-          .setDate(description)
-          .setDate(recipient)
+          .setAmount(amount)
+          .setDescription(description)
+          .setRecipient(recipient)
           .setTimestamp(timestampString)
       .build());
 
