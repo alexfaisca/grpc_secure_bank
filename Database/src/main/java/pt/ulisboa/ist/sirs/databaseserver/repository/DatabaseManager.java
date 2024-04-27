@@ -15,8 +15,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import javax.json.JsonArrayBuilder;
-
 public final class DatabaseManager {
   private abstract static class SimpleDatabaseTransaction<ObjectiveType> extends DatabaseTransaction {
     ObjectiveType yield;
@@ -38,7 +36,7 @@ public final class DatabaseManager {
   private final DatabaseOperations databaseOperator;
   private final Session session;
 
-  public DatabaseManager(DatabaseService service) throws Exception {
+  public DatabaseManager(DatabaseService service) {
     final SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
     this.session = sessionFactory.openSession();
     this.databaseService = service;
@@ -49,7 +47,7 @@ public final class DatabaseManager {
     return databaseService;
   }
 
-  public void shutDown() throws Exception {
+  public void shutDown() {
     databaseService.delete();
     session.close();
     HibernateUtil.shutdown();

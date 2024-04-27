@@ -1,6 +1,7 @@
 package pt.ulisboa.ist.sirs.databaseserver;
 
 import pt.ulisboa.ist.sirs.cryptology.Base;
+import pt.ulisboa.ist.sirs.cryptology.Operations;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AuthenticationClientCryptographicManager;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.DatabaseServerCryptographicInterceptor;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.DatabaseService;
@@ -10,10 +11,15 @@ import pt.ulisboa.ist.sirs.databaseserver.repository.DatabaseManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
@@ -33,22 +39,9 @@ public class DatabaseServer {
     final int namingServerPort = Integer.parseInt(args.get(5));
     final DatabaseServerCryptographicInterceptor crypto = new DatabaseServerCryptographicInterceptor();
 
-    // // Test add account
-    // state.createAccount(Collections.singletonList("Alice"),
-    // Operations.hash("12345".getBytes()),
-    // new BigDecimal("10101010101"), OffsetDateTime.now());
-    // state.createAccount(Collections.singletonList("Bob"),
-    // Operations.hash("12345".getBytes()),
-    // new BigDecimal("9599543"), OffsetDateTime.now());
-    // // Test order payment
-    // state.orderPayment("Bob", Operations.hash("12345".getBytes()),
-    // LocalDateTime.now(), new BigDecimal("1000"),
-    // "Last Tuesday's dinner", "Alice", OffsetDateTime.now());
-
     final DatabaseServerCryptographicManager cryptoCore = new DatabaseServerCryptographicManager(
       crypto, Base.CryptographicCore.getPublicKeyPath(), Base.CryptographicCore.getPrivateKeyPath()
     );
-
     this.state = new DatabaseManager(
       new DatabaseService.DatabaseServiceBuilder(
         args.get(0),
@@ -61,6 +54,13 @@ public class DatabaseServer {
         new AuthenticationClientCryptographicManager(),
         debug)
     .build());
+
+    try {
+      test(state);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException(e.getMessage());
+    }
+
     final BindableService databaseService = new DatabaseServerImpl(state, cryptoCore, debug).getService();
     this.server = Grpc.newServerBuilderForPort(
       databasePort,
@@ -83,7 +83,32 @@ public class DatabaseServer {
     }));
   }
 
-  private void serverShutdown() throws Exception {
+  private void test(DatabaseManager state) throws NoSuchAlgorithmException {
+    // Initialize some accounts
+    state.createAccount(
+            Collections.singletonList("Alice"),
+            Operations.hash("12345".getBytes()),
+            new BigDecimal("10101010101"),
+            OffsetDateTime.now()
+    );
+    state.createAccount(
+            Collections.singletonList("Bob"),
+            Operations.hash("12345".getBytes()),
+            new BigDecimal("9599543"),
+            OffsetDateTime.now()
+    );
+    state.orderPayment(
+            "Bob",
+            Operations.hash("12345".getBytes()),
+            LocalDateTime.now(),
+            new BigDecimal("1000"),
+            "Last Tuesday's dinner",
+            "Alice",
+            OffsetDateTime.now()
+    );
+  }
+
+  private void serverShutdown() {
     if (debug)
       System.out.println("Database: Deleting '" + state.getService().getServerServiceName() + "''s '"
         + state.getService().getServerName() + "' server at " + state.getService().getServerAddress() + ":"
@@ -94,7 +119,7 @@ public class DatabaseServer {
     System.exit(0);
   }
 
-  private void blockUntilShutDown() throws Exception {
+  private void blockUntilShutDown() {
     System.out.println("Press ENTER to delete '" + state.getService().getServerServiceName() + "''s '"
       + state.getService().getServerName() + "' server.");
     try (Scanner scan = new Scanner(System.in)) {
