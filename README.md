@@ -42,8 +42,41 @@ $ psql -h localhost -U postgres
 > CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ```
 
+#### Machine 1 - Authentication Server
 
-#### Machine 1 - User
+This machine runs Java 17, Maven 3.9 and PostgreSQL 16.1.
+
+To initialize:
+
+```sh
+$ mvn clean install
+```
+
+To run:
+
+```sh
+$ mvn exec:exec
+```
+
+#### Machine 2 - Database
+
+This machine runs Java 17, Maven 3.9 and PostgreSQL 16.1.
+
+To initialize:
+
+```sh
+$ mvn clean install
+```
+
+To run:
+
+```sh
+$ mvn exec:exec
+```
+
+All attacks on the system are promptly outputed to the terminal, resulting in the throw of an expection.
+
+#### Machine 3 - User
 
 This machine runs Java 17, Maven 3.9 and PostgreSQL 16.1.
 
@@ -105,56 +138,6 @@ Available commands:
 (2) To process payments in accounts with multiple holders they all must place exactly the same order first.
 
 All attacks on the system are promptly outputed to the terminal, resulting in the throw of an expection.
-
-#### Machine 2 - Bank
-
-This machine runs Java 17, Maven 3.9 and PostgreSQL 16.1.
-
-To initialize:
-
-```sh
-$ mvn clean install
-```
-
-To run:
-
-```sh
-$ mvn exec:exec
-```
-
-#### Machine 2 - Database
-
-This machine runs Java 17, Maven 3.9 and PostgreSQL 16.1.
-
-To initialize:
-
-```sh
-$ mvn clean install
-```
-
-To run:
-
-```sh
-$ mvn exec:exec
-```
-
-All attacks on the system are promptly outputed to the terminal, resulting in the throw of an expection.
-
-#### Machine 4 - Authentication Server
-
-This machine runs Java 17, Maven 3.9 and PostgreSQL 16.1.
-
-To initialize:
-
-```sh
-$ mvn clean install
-```
-
-To run:
-
-```sh
-$ mvn exec:exec
-```
 
 ## Demonstration
 
