@@ -41,15 +41,20 @@ public class AuthenticationServerCryptographicStub extends AbstractStub<Authenti
     };
   }
   final MethodDescriptor<DiffieHellmanExchangeRequest, DiffieHellmanExchangeResponse> METHOD_DIFFIE_HELLMAN =
-          AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().toBuilder(
-                  AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getRequestMarshaller(),
-                  AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getResponseMarshaller()
-          ).build();
+    AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().toBuilder(
+      AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getRequestMarshaller(),
+      AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getResponseMarshaller()
+  ).build();
+  final MethodDescriptor<LookupRequest, LookupResponse> METHOD_LOOKUP =
+    AuthenticationServerServiceGrpc.getLookupMethod().toBuilder(
+      marshallerForAuth(LookupRequest.getDefaultInstance()),
+      marshallerForAuth(LookupResponse.getDefaultInstance())
+  ).build();
   final MethodDescriptor<AuthenticateRequest, AuthenticateResponse> METHOD_AUTHENTICATE =
-          AuthenticationServerServiceGrpc.getAuthenticateMethod().toBuilder(
-                  marshallerForAuth(AuthenticateRequest.getDefaultInstance()),
-                  marshallerForAuth(AuthenticateResponse.getDefaultInstance())
-          ).build();
+    AuthenticationServerServiceGrpc.getAuthenticateMethod().toBuilder(
+      marshallerForAuth(AuthenticateRequest.getDefaultInstance()),
+      marshallerForAuth(AuthenticateResponse.getDefaultInstance())
+  ).build();
   private final ClientCryptographicManager crypto;
 
   public AuthenticationServerCryptographicStub(Channel channel, ClientCryptographicManager crypto) {
@@ -69,6 +74,10 @@ public class AuthenticationServerCryptographicStub extends AbstractStub<Authenti
 
   public DiffieHellmanExchangeResponse diffieHellmanExchange(DiffieHellmanExchangeRequest request) {
     return blockingUnaryCall(getChannel(), METHOD_DIFFIE_HELLMAN, getCallOptions(), request);
+  }
+
+  public LookupResponse lookup(LookupRequest request) {
+    return blockingUnaryCall(getChannel(), METHOD_LOOKUP, getCallOptions(), request);
   }
 
   public AuthenticateResponse authenticate(AuthenticateRequest request) {

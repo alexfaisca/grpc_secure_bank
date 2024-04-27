@@ -1,10 +1,7 @@
 syntax = "proto3";
 package pt.ulisboa.ist.sirs.contract.namingserver;
 
-enum Services {
-    AuthServer = 0;
-    DatabaseServer = 1;
-}
+import "Enums.proto";
 
 message Ack {}
 
@@ -33,14 +30,14 @@ message EncryptedKeyExchangeChallengeResponse {
 }
 
 message RegisterRequest {
-  Services service = 1;
+  enums.Services service = 1;
   string address = 2;
   int32 port = 3;
   string qualifier = 4;
 }
 
 message LookupRequest {
-  Services service = 1;
+  enums.Services service = 1;
 }
 
 message LookupResponse {
@@ -53,7 +50,7 @@ message LookupResponse {
 }
 
 message DeleteRequest {
-  Services service = 1;
+  enums.Services service = 1;
   string qualifier = 2;
 }
 

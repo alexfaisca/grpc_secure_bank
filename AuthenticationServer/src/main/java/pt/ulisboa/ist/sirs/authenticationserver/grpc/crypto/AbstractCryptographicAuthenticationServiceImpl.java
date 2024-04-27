@@ -54,6 +54,19 @@ public abstract class AbstractCryptographicAuthenticationServiceImpl {
         AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getRequestMarshaller(),
         AuthenticationServerServiceGrpc.getDiffieHellmanExchangeMethod().getResponseMarshaller()
     ).build();
+    final MethodDescriptor<LookupRequest, LookupResponse> METHOD_LOOKUP =
+      AuthenticationServerServiceGrpc.getLookupMethod().toBuilder(
+        marshallerForAuthServer(
+          LookupRequest.getDefaultInstance(),
+          AuthenticationServerServiceGrpc.getLookupMethod().getFullMethodName(),
+          crypto
+        ),
+        marshallerForAuthServer(
+          LookupResponse.getDefaultInstance(),
+          AuthenticationServerServiceGrpc.getLookupMethod().getFullMethodName(),
+          crypto
+        )
+    ).build();
     final MethodDescriptor<AuthenticateRequest, AuthenticateResponse> METHOD_AUTHENTICATE =
       AuthenticationServerServiceGrpc.getAuthenticateMethod().toBuilder(
         marshallerForAuthServer(
@@ -70,6 +83,7 @@ public abstract class AbstractCryptographicAuthenticationServiceImpl {
     ServerServiceDefinition orig = serverImpl.bindService();
     return ServerServiceDefinition.builder(orig.getServiceDescriptor().getName())
             .addMethod(METHOD_DIFFIE_HELLMAN, asyncUnaryCall(serverImpl::diffieHellmanExchange))
+            .addMethod(METHOD_LOOKUP, asyncUnaryCall(serverImpl::lookup))
             .addMethod(METHOD_AUTHENTICATE, asyncUnaryCall(serverImpl::authenticate))
             .build();
   }

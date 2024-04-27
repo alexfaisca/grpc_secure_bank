@@ -63,10 +63,8 @@ public class NamingServerState {
     return this.services.get(service).values().stream().map(a -> new TargetServer(a.server, a.address, a.port, a.qualifier)).toList();
   }
 
-  public TargetServer getServerEntry(Types service) throws ServiceHasNoRegisteredServersException {
-    ServerEntry serverEntry = this.services.get(service).values().stream().findAny().orElseThrow(
-      () -> new ServiceHasNoRegisteredServersException(service.name())
-    );
+  public TargetServer getServerEntry(Types service, String qualifier) {
+    ServerEntry serverEntry = this.services.get(service).get(qualifier);
     return new TargetServer(serverEntry.server, serverEntry.address, serverEntry.port, serverEntry.qualifier);
   }
 

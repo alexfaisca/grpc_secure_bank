@@ -3,6 +3,7 @@ package pt.ulisboa.ist.sirs.userclient.grpc;
 import io.grpc.*;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer;
 import pt.ulisboa.ist.sirs.contract.databaseserver.DatabaseServer.*;
+import pt.ulisboa.ist.sirs.contract.enums.Enums;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.AuthenticationServerCryptographicStub;
 import pt.ulisboa.ist.sirs.userclient.grpc.crypto.ClientCryptographicManager;
@@ -64,7 +65,7 @@ public class UserService {
       builder.authenticationServerChannel, crypto
     );
     this.diffieHellman();
-    this.authenticate(OffsetDateTime.now().toString(), builder.credentials);
+    this.authenticate(this.lookup(), OffsetDateTime.now().toString(), builder.credentials);
   }
 
   private void initializeStub(String address, Integer port, ChannelCredentials credentials) {
@@ -92,13 +93,23 @@ public class UserService {
     }
   }
 
-  public void authenticate(String timestampString, ChannelCredentials credentials) {
+  public String lookup() {
+    Enums.Services services = Enums.Services.DatabaseServer;
+    AuthenticationServer.LookupResponse lookupResponse = authenticationServerServiceStub.lookup(
+      AuthenticationServer.LookupRequest.newBuilder().setService(services).build()
+    );
+    if (lookupResponse.getServersList().isEmpty())
+      throw new RuntimeException("Could not find any service server for service '" + services.name() + "'");
+    return lookupResponse.getServersList().get(0).getQualifier();
+  }
+
+  public void authenticate(String qualifier, String timestampString, ChannelCredentials credentials) {
     try {
       // Needham-Schroeder step 1
       AuthenticationServer.AuthenticateResponse authTicket = authenticationServerServiceStub.authenticate(
         AuthenticationServer.AuthenticateRequest.newBuilder()
           .setSource("user")
-          .setTarget("database")
+          .setTarget(qualifier)
           .setTimeStamp(timestampString)
       .build());
 

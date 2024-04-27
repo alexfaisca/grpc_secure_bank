@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package pt.ulisboa.ist.sirs.contract.authenticationserver;
+import "Enums.proto";
 
 message DiffieHellmanExchangeRequest {
   bytes clientPublic = 1;
@@ -17,6 +18,17 @@ message AuthenticateRequest {
   string timeStamp = 3;
 }
 
+message LookupRequest {
+  enums.Services service = 1;
+}
+
+message LookupResponse {
+  message ServiceServer {
+    string qualifier = 1;
+  }
+  repeated ServiceServer servers = 1;
+}
+
 message AuthenticateResponse {
   string address = 1;
   int32 port = 2;
@@ -29,5 +41,6 @@ message AuthenticateResponse {
 
 service AuthenticationServerService {
   rpc diffieHellmanExchange(DiffieHellmanExchangeRequest) returns (DiffieHellmanExchangeResponse);
+  rpc lookup(LookupRequest) returns (LookupResponse);
   rpc authenticate (AuthenticateRequest) returns (AuthenticateResponse);
 }

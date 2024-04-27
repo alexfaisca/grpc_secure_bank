@@ -2,6 +2,7 @@ package pt.ulisboa.ist.sirs.databaseserver.grpc;
 
 import com.google.protobuf.ByteString;
 import io.grpc.*;
+import pt.ulisboa.ist.sirs.contract.enums.Enums;
 import pt.ulisboa.ist.sirs.contract.namingserver.NamingServer;
 import pt.ulisboa.ist.sirs.cryptology.Base;
 import pt.ulisboa.ist.sirs.databaseserver.grpc.crypto.AuthenticationClientCryptographicManager;
@@ -139,7 +140,7 @@ public class DatabaseService {
       System.out.println("\t\t\tDatabaseService: Registering service");
     NamingServer.Ack ignore = stub.register(
       NamingServer.RegisterRequest.newBuilder()
-        .setService(NamingServer.Services.DatabaseServer)
+        .setService(Enums.Services.DatabaseServer)
         .setAddress(getServerAddress())
         .setPort(getServerPort())
         .setQualifier(getServerName())
@@ -151,7 +152,7 @@ public class DatabaseService {
       System.out.println("\t\t\tDatabaseService: Deleting service");
     NamingServer.Ack ignore = stub.delete(
       NamingServer.DeleteRequest.newBuilder()
-      .setService(NamingServer.Services.DatabaseServer)
+      .setService(Enums.Services.DatabaseServer)
       .setQualifier(getServerName())
     .build());
   }

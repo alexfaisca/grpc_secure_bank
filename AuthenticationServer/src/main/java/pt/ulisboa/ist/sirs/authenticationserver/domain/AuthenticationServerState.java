@@ -2,12 +2,14 @@ package pt.ulisboa.ist.sirs.authenticationserver.domain;
 
 import pt.ulisboa.ist.sirs.authenticationserver.dto.AuthTicket;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
+import pt.ulisboa.ist.sirs.authenticationserver.dto.ServerIdentity;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.TargetServer;
 import pt.ulisboa.ist.sirs.authenticationserver.enums.Service;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.AuthenticationService;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public class AuthenticationServerState {
 
@@ -81,13 +83,20 @@ public class AuthenticationServerState {
     }
   }
 
-  public synchronized AuthTicket authenticate(String source, String client, OffsetDateTime timestamp) {
+  public synchronized List<ServerIdentity> lookup(Service.Types service) {
+    return namingServerState.lookupServiceServers(service).stream()
+      .map(s -> new ServerIdentity(s.qualifier())).toList();
+  }
+
+  public synchronized AuthTicket authenticate(String source, String target, String client, OffsetDateTime timestamp) {
     if (isDebug())
       System.out.printf("\t\tAuthenticationServerState: authenticating %s\n", source);
     try {
       service.checkForReplayAttack(client, timestamp);
-      TargetServer target = namingServerState.getServerEntry(Service.Types.DatabaseServer);
-      return service.authenticate(source, target.qualifier(), target.server(), target.address(), target.port(), timestamp);
+      TargetServer targetServer = namingServerState.getServerEntry(Service.Types.DatabaseServer, target);
+      return service.authenticate(
+        source, targetServer.qualifier(), targetServer.server(), targetServer.address(), targetServer.port(), timestamp
+      );
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

@@ -5,7 +5,9 @@ import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import pt.ulisboa.ist.sirs.authenticationserver.domain.utils.ServiceTypesConverter;
 import pt.ulisboa.ist.sirs.authenticationserver.dto.AuthTicket;
+import pt.ulisboa.ist.sirs.authenticationserver.dto.ServerIdentity;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AbstractCryptographicAuthenticationServiceImpl;
 import pt.ulisboa.ist.sirs.authenticationserver.grpc.crypto.AuthenticationServerCryptographicManager;
 import pt.ulisboa.ist.sirs.contract.authenticationserver.AuthenticationServer.*;
@@ -15,6 +17,7 @@ import pt.ulisboa.ist.sirs.authenticationserver.domain.AuthenticationServerState
 import pt.ulisboa.ist.sirs.authenticationserver.dto.DiffieHellmanExchangeParameters;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public final class AuthenticationServerImpl extends AuthenticationServerServiceImplBase {
   private abstract static class AuthenticationServiceImpl extends AbstractCryptographicAuthenticationServiceImpl implements BindableService {
@@ -70,6 +73,25 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
   }
 
   @Override
+  public void lookup(
+    LookupRequest request, StreamObserver<LookupResponse> responseObserver
+  ) {
+    try {
+      List<ServerIdentity> params = state.lookup(
+        ServiceTypesConverter.convert(request.getService())
+      );
+
+      responseObserver.onNext(LookupResponse.newBuilder()
+        .addAllServers(params.stream().map(
+          s -> LookupResponse.ServiceServer.newBuilder().setQualifier(s.qualifier()).build()).toList()
+      ).build());
+      responseObserver.onCompleted();
+    } catch (Exception e) {
+      responseObserver.onError(Status.ABORTED.withDescription(e.getMessage()).asRuntimeException());
+    }
+  }
+
+  @Override
   public void authenticate(
     AuthenticateRequest request, StreamObserver<AuthenticateResponse> responseObserver
   ) {
@@ -78,9 +100,10 @@ public final class AuthenticationServerImpl extends AuthenticationServerServiceI
         System.out.println("\tAuthenticationServerImpl: deserialize and parse request");
       String client = crypto.getClientHash(AuthenticationServerServiceGrpc.getAuthenticateMethod().getFullMethodName());
       String source = request.getSource();
+      String target = request.getTarget();
       OffsetDateTime timestamp = OffsetDateTime.parse(request.getTimeStamp());
 
-      AuthTicket ticket = state.authenticate(source, client, timestamp);
+      AuthTicket ticket = state.authenticate(source, target, client, timestamp);
 
       if (isDebug())
         System.out.println("\tAuthenticationServerImpl: serialize and send response");
